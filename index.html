@@ -301,6 +301,11 @@
             color: #856404;
         }
 
+        .status-in-call {
+            background: #d4edda;
+            color: #155724;
+        }
+
         .alert {
             padding: 15px;
             border-radius: 8px;
@@ -532,7 +537,7 @@
             object-fit: cover;
         }
 
-        /* JANELA DE CHAMADA FLUTUANTE - NOVO ESTILO */
+        /* JANELA DE CHAMADA OTIMIZADA */
         .audio-call-window {
             position: fixed;
             top: 100px;
@@ -548,7 +553,7 @@
         }
 
         .audio-call-header {
-            padding: 15px;
+            padding: 12px;
             background: var(--primary-color);
             color: white;
             border-radius: 8px 8px 0 0;
@@ -559,7 +564,7 @@
         }
 
         .audio-call-title {
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 600;
             margin: 0;
         }
@@ -568,14 +573,14 @@
             padding: 15px;
         }
 
-        /* Status da Chamada */
+        /* Status da Chamada Compacto */
         .call-status-indicator {
-            padding: 10px;
-            border-radius: 8px;
+            padding: 8px;
+            border-radius: 6px;
             text-align: center;
             font-weight: 600;
-            margin: 10px 0;
-            font-size: 0.9rem;
+            margin: 8px 0;
+            font-size: 0.85rem;
         }
 
         .status-connecting {
@@ -595,41 +600,41 @@
 
         .audio-visualizer {
             width: 100%;
-            height: 60px;
+            height: 40px;
             background: #2c3e50;
-            border-radius: 8px;
+            border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            gap: 3px;
-            margin: 10px 0;
+            gap: 2px;
+            margin: 8px 0;
         }
 
         .audio-bar {
-            width: 4px;
+            width: 3px;
             background: var(--success-color);
-            border-radius: 2px;
+            border-radius: 1px;
             transition: height 0.1s ease;
         }
 
         .webrtc-controls {
             display: flex;
-            gap: 10px;
-            margin: 10px 0;
+            gap: 8px;
+            margin: 8px 0;
             justify-content: center;
             flex-wrap: wrap;
         }
 
         .webrtc-btn {
-            padding: 8px 12px;
+            padding: 6px 10px;
             border: none;
-            border-radius: 5px;
+            border-radius: 4px;
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 5px;
-            font-size: 0.8rem;
+            gap: 4px;
+            font-size: 0.75rem;
             transition: all 0.3s ease;
         }
 
@@ -652,15 +657,16 @@
 
         .call-btn {
             width: 100%;
-            padding: 10px;
+            padding: 8px;
             border-radius: 5px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             border: none;
             cursor: pointer;
             transition: all 0.3s ease;
+            gap: 5px;
         }
 
         .call-btn-warning {
@@ -690,7 +696,8 @@
             text-align: center;
             font-weight: 600;
             color: var(--primary-dark);
-            margin: 8px 0;
+            margin: 6px 0;
+            font-size: 1.1rem;
         }
 
         /* Modal de imagem ampliada */
@@ -756,6 +763,31 @@
                 width: 300px;
                 right: 10px;
                 top: 80px;
+            }
+
+            .call-btn {
+                font-size: 0.7rem;
+                padding: 6px;
+            }
+
+            .call-duration {
+                font-size: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .audio-call-window {
+                width: 280px;
+                right: 5px;
+                top: 70px;
+            }
+            
+            .audio-call-body {
+                padding: 10px;
+            }
+            
+            .call-btn {
+                font-size: 0.65rem;
             }
         }
     </style>
@@ -892,22 +924,12 @@
                     </div>
                 </div>
 
-                <h3 class="section-title">Ganhos por Período</h3>
-                
-                <div class="form-group">
-                    <label class="form-label" for="period-select">Selecionar Período</label>
-                    <select class="form-input" id="period-select">
-                        <option value="today">Hoje</option>
-                        <option value="week">Esta Semana</option>
-                        <option value="month">Este Mês</option>
-                        <option value="all">Todo o Período</option>
-                    </select>
-                </div>
-
+                <!-- SECÇÃO DE GANHOS SIMPLIFICADA -->
+                <h3 class="section-title">Resumo de Ganhos</h3>
                 <div id="earnings-breakdown">
                     <div class="consultation-card">
-                        <div class="patient-name">Resumo do Período</div>
-                        <div><strong>Total de Consultas:</strong> 0</div>
+                        <div class="patient-name">Resumo Total</div>
+                        <div><strong>Total de Consultas Concluídas:</strong> 0</div>
                         <div><strong>Valor por Consulta:</strong> 15€</div>
                         <div><strong>Total Ganho:</strong> 0€</div>
                     </div>
@@ -1053,23 +1075,22 @@
         </div>
     </div>
 
-    <!-- JANELA DE CHAMADA FLUTUANTE - SUBSTITUI O MODAL -->
+    <!-- JANELA DE CHAMADA OTIMIZADA -->
     <div class="audio-call-window" id="audio-call-window">
         <div class="audio-call-header" id="audio-call-header">
             <h3 class="audio-call-title">
                 <i class="fas fa-phone"></i>
                 Chamada em Andamento
             </h3>
-            <!-- SEM BOTÃO X - CHAMADA SÓ TERMINA COM OS BOTÕES -->
         </div>
         <div class="audio-call-body">
-            <!-- Status da Chamada -->
+            <!-- Status da Chamada Compacto -->
             <div class="call-status-indicator status-connecting" id="audio-call-status">
                 <i class="fas fa-sync-alt fa-spin"></i>
                 Conectando...
             </div>
 
-            <!-- Visualizador de Áudio -->
+            <!-- Visualizador de Áudio Compacto -->
             <div class="audio-visualizer" id="audio-visualizer">
                 <div class="audio-bar" style="height: 20%;"></div>
                 <div class="audio-bar" style="height: 40%;"></div>
@@ -1081,7 +1102,7 @@
             <!-- Duração da Chamada -->
             <div class="call-duration" id="audio-call-duration">00:00</div>
 
-            <!-- BOTÕES DE CONTROLO DA CHAMADA -->
+            <!-- BOTÕES DE CONTROLO DA CHAMADA COMPACTOS -->
             <div class="call-actions">
                 <button class="call-btn call-btn-warning" id="audio-btn-not-suitable-online">
                     <i class="fas fa-video-slash"></i> Não adequado online
@@ -1094,7 +1115,7 @@
                 </button>
             </div>
 
-            <!-- Controlo de Áudio -->
+            <!-- Controlo de Áudio Compacto -->
             <div class="webrtc-controls">
                 <button class="webrtc-btn webrtc-btn-mute" id="toggle-audio-mic">
                     <i class="fas fa-microphone"></i>
@@ -1112,31 +1133,405 @@
         // Inicializar Supabase
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        // SERVIÇOS UNIFICADOS
+        const doctorWebRTCService = {
+            peerConnection: null,
+            localStream: null,
+            remoteStream: null,
+            currentState: 'idle', // idle, offer-sent, answer-sent, connected
+
+            async initializeCall(consultationId, doctorId) {
+                try {
+                    console.log('Inicializando chamada WebRTC...');
+                    this.currentState = 'initializing';
+
+                    // Configurar WebRTC
+                    await this.setupAudioStream();
+                    await this.setupPeerConnection();
+                    
+                    // Configurar sinalização
+                    await signalingService.setupSignaling(consultationId, doctorId);
+                    
+                    // Criar oferta
+                    await this.createOffer();
+                    
+                    this.currentState = 'offer-sent';
+                    console.log('Chamada WebRTC inicializada com sucesso');
+                    
+                } catch (error) {
+                    console.error('Erro na inicialização WebRTC:', error);
+                    this.currentState = 'error';
+                    throw error;
+                }
+            },
+
+            async setupAudioStream() {
+                try {
+                    this.localStream = await navigator.mediaDevices.getUserMedia({
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true,
+                            channelCount: 1
+                        },
+                        video: false
+                    });
+                    console.log("Stream de áudio iniciada com sucesso");
+                } catch (error) {
+                    console.error('Erro ao acessar microfone:', error);
+                    throw new Error('Não foi possível acessar o microfone');
+                }
+            },
+
+            async setupPeerConnection() {
+                const configuration = {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' }
+                    ]
+                };
+
+                this.peerConnection = new RTCPeerConnection(configuration);
+
+                // Adicionar tracks locais
+                this.localStream.getTracks().forEach(track => {
+                    this.peerConnection.addTrack(track, this.localStream);
+                });
+
+                // Configurar event handlers
+                this.peerConnection.ontrack = (event) => {
+                    this.remoteStream = event.streams[0];
+                    const remoteAudio = new Audio();
+                    remoteAudio.srcObject = this.remoteStream;
+                    remoteAudio.play().catch(e => console.error('Erro ao reproduzir áudio:', e));
+                    this.currentState = 'connected';
+                    callUIManager.updateStatus('Conectado com o paciente', 'connected');
+                };
+
+                this.peerConnection.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        signalingService.sendMessage('candidate', event.candidate);
+                    }
+                };
+
+                this.peerConnection.onconnectionstatechange = () => {
+                    const state = this.peerConnection.connectionState;
+                    console.log('Estado da conexão:', state);
+                    
+                    if (state === 'connected') {
+                        this.currentState = 'connected';
+                        callUIManager.updateStatus('Conectado com o paciente', 'connected');
+                    } else if (state === 'disconnected' || state === 'failed') {
+                        this.currentState = 'error';
+                        callUIManager.updateStatus('Conexão perdida', 'error');
+                    }
+                };
+            },
+
+            async createOffer() {
+                try {
+                    const offer = await this.peerConnection.createOffer();
+                    await this.peerConnection.setLocalDescription(offer);
+                    console.log('Offer criado, estado:', this.peerConnection.signalingState);
+                    await signalingService.sendMessage('offer', offer);
+                } catch (error) {
+                    console.error('Erro ao criar offer:', error);
+                    throw error;
+                }
+            },
+
+            async handleOffer(offer) {
+                if (this.peerConnection && this.peerConnection.signalingState === 'stable') {
+                    try {
+                        await this.peerConnection.setRemoteDescription(offer);
+                        const answer = await this.peerConnection.createAnswer();
+                        await this.peerConnection.setLocalDescription(answer);
+                        await signalingService.sendMessage('answer', answer);
+                        this.currentState = 'answer-sent';
+                    } catch (error) {
+                        console.error('Erro ao processar offer:', error);
+                    }
+                }
+            },
+
+            async handleAnswer(answer) {
+                if (this.peerConnection && this.peerConnection.signalingState === 'have-local-offer') {
+                    try {
+                        await this.peerConnection.setRemoteDescription(answer);
+                        console.log('Answer processado, estado:', this.peerConnection.signalingState);
+                    } catch (error) {
+                        console.error('Erro ao processar answer:', error);
+                    }
+                }
+            },
+
+            async handleCandidate(candidate) {
+                if (this.peerConnection) {
+                    try {
+                        await this.peerConnection.addIceCandidate(candidate);
+                    } catch (error) {
+                        console.error('Erro ao adicionar ICE candidate:', error);
+                    }
+                }
+            },
+
+            cleanup() {
+                if (this.localStream) {
+                    this.localStream.getTracks().forEach(track => track.stop());
+                    this.localStream = null;
+                }
+                
+                if (this.peerConnection) {
+                    this.peerConnection.close();
+                    this.peerConnection = null;
+                }
+                
+                this.remoteStream = null;
+                this.currentState = 'idle';
+                
+                console.log('Recursos WebRTC limpos');
+            }
+        };
+
+        const signalingService = {
+            roomId: null,
+            channel: null,
+
+            async setupSignaling(consultationId, doctorId) {
+                try {
+                    // Buscar sala existente primeiro
+                    let { data: room, error: roomError } = await supabase
+                        .from('signaling_rooms')
+                        .select('*')
+                        .eq('consultation_id', consultationId)
+                        .single();
+
+                    if (roomError || !room) {
+                        console.log('Criando nova sala de sinalização...');
+                        const roomName = `consultation-${consultationId}`;
+                        const { data: newRoom, error: createError } = await supabase
+                            .from('signaling_rooms')
+                            .insert([{
+                                consultation_id: consultationId,
+                                doctor_id: doctorId,
+                                room_name: roomName,
+                                status: 'active'
+                            }])
+                            .select()
+                            .single();
+
+                        if (createError) throw createError;
+                        room = newRoom;
+                    }
+
+                    this.roomId = room.id;
+
+                    // Configurar subscription
+                    this.channel = supabase
+                        .channel(`signaling-room-${room.id}`)
+                        .on(
+                            'postgres_changes',
+                            {
+                                event: 'INSERT',
+                                schema: 'public',
+                                table: 'signaling_messages',
+                                filter: `room_id=eq.${room.id}`
+                            },
+                            (payload) => {
+                                console.log('Mensagem signaling recebida:', payload.new);
+                                this.handleIncomingMessage(payload.new);
+                            }
+                        )
+                        .subscribe((status) => {
+                            console.log('Status da subscription de signaling:', status);
+                        });
+
+                } catch (error) {
+                    console.error('Erro ao configurar sinalização:', error);
+                    throw error;
+                }
+            },
+
+            async handleIncomingMessage(message) {
+                try {
+                    console.log(`Processando mensagem: ${message.message_type}, Estado: ${doctorWebRTCService.currentState}`);
+                    
+                    switch (message.message_type) {
+                        case 'offer':
+                            if (doctorWebRTCService.currentState === 'idle') {
+                                await doctorWebRTCService.handleOffer(JSON.parse(message.sdp));
+                            }
+                            break;
+                        case 'answer':
+                            if (doctorWebRTCService.currentState === 'offer-sent') {
+                                await doctorWebRTCService.handleAnswer(JSON.parse(message.sdp));
+                            }
+                            break;
+                        case 'candidate':
+                            await doctorWebRTCService.handleCandidate(JSON.parse(message.candidate));
+                            break;
+                        case 'hangup':
+                            callManager.endCall('hangup_received');
+                            break;
+                    }
+                } catch (error) {
+                    console.error('Erro ao processar mensagem de sinalização:', error);
+                }
+            },
+
+            async sendMessage(messageType, data) {
+                try {
+                    const messageData = {
+                        room_id: this.roomId,
+                        from_user: currentDoctor.doctor_id,
+                        message_type: messageType
+                    };
+
+                    if (messageType === 'offer' || messageType === 'answer') {
+                        messageData.sdp = JSON.stringify(data);
+                    } else if (messageType === 'candidate') {
+                        messageData.candidate = JSON.stringify(data);
+                    }
+
+                    const { error } = await supabase
+                        .from('signaling_messages')
+                        .insert([messageData]);
+
+                    if (error) throw error;
+                    console.log(`Mensagem ${messageType} enviada com sucesso`);
+                    
+                } catch (error) {
+                    console.error('Erro ao enviar mensagem de sinalização:', error);
+                }
+            },
+
+            cleanup() {
+                if (this.channel) {
+                    supabase.removeChannel(this.channel);
+                    this.channel = null;
+                }
+                this.roomId = null;
+            }
+        };
+
+        const callUIManager = {
+            updateStatus(message, type) {
+                const statusElement = document.getElementById('audio-call-status');
+                statusElement.textContent = message;
+                statusElement.className = `call-status-indicator status-${type}`;
+                
+                if (type === 'connected') {
+                    statusElement.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+                } else if (type === 'connecting') {
+                    statusElement.innerHTML = `<i class="fas fa-sync-alt fa-spin"></i> ${message}`;
+                } else if (type === 'error') {
+                    statusElement.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${message}`;
+                }
+            },
+
+            updateTimer(seconds) {
+                const minutes = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                document.getElementById('audio-call-duration').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            },
+
+            updateVisualizer() {
+                const bars = document.querySelectorAll('#audio-visualizer .audio-bar');
+                bars.forEach((bar, index) => {
+                    const height = 20 + Math.random() * 60;
+                    bar.style.height = `${height}%`;
+                });
+            },
+
+            updateCompleteButton(enabled) {
+                const btn = document.getElementById('audio-btn-complete-consultation');
+                btn.disabled = !enabled;
+            },
+
+            showCallWindow() {
+                document.getElementById('audio-call-window').style.display = 'block';
+            },
+
+            hideCallWindow() {
+                document.getElementById('audio-call-window').style.display = 'none';
+            }
+        };
+
+        const callManager = {
+            consultationId: null,
+            callTimer: null,
+            callSeconds: 0,
+            notesSaved: false,
+
+            async startCall(consultationId) {
+                try {
+                    this.consultationId = consultationId;
+                    this.callSeconds = 0;
+                    this.notesSaved = false;
+
+                    callUIManager.showCallWindow();
+                    callUIManager.updateStatus('Conectando com o paciente...', 'connecting');
+                    callUIManager.updateCompleteButton(false);
+
+                    await doctorWebRTCService.initializeCall(consultationId, currentDoctor.doctor_id);
+                    this.startTimer();
+
+                } catch (error) {
+                    console.error('Erro ao iniciar chamada:', error);
+                    callUIManager.updateStatus('Erro na conexão: ' + error.message, 'error');
+                }
+            },
+
+            startTimer() {
+                this.callTimer = setInterval(() => {
+                    this.callSeconds++;
+                    callUIManager.updateTimer(this.callSeconds);
+                    callUIManager.updateVisualizer();
+                }, 1000);
+            },
+
+            async endCall(reason = 'normal') {
+                try {
+                    if (this.callTimer) {
+                        clearInterval(this.callTimer);
+                        this.callTimer = null;
+                    }
+
+                    if (signalingService.roomId && reason !== 'hangup_received') {
+                        await signalingService.sendMessage('hangup', {});
+                    }
+
+                    doctorWebRTCService.cleanup();
+                    signalingService.cleanup();
+
+                    callUIManager.hideCallWindow();
+                    
+                    // Atualizar UI principal
+                    if (document.getElementById('consultations').classList.contains('active')) {
+                        loadConsultationsPage();
+                    }
+
+                    console.log(`Chamada terminada: ${reason}`);
+
+                } catch (error) {
+                    console.error('Erro ao terminar chamada:', error);
+                } finally {
+                    this.consultationId = null;
+                    this.callSeconds = 0;
+                    this.notesSaved = false;
+                }
+            },
+
+            canCompleteConsultation() {
+                return this.notesSaved && doctorWebRTCService.currentState === 'connected';
+            }
+        };
+
         // Estado da aplicação
         let currentDoctor = null;
-        let currentConsultationId = null;
-        let callTimer = null;
-        let callSeconds = 0;
         let isAvailable = false;
         let realtimeSubscription = null;
-        let notesSaved = false;
-
-        // VARIÁVEIS WEBCAM APENAS ÁUDIO
-        let localStream = null;
-        let remoteStream = null;
-        let peerConnection = null;
-        let isMicMuted = false;
-        let audioCallActive = false;
-        let signalingChannel = null;
-        let currentRoomId = null;
-
-        // CONFIGURAÇÃO WEBRTC APENAS ÁUDIO
-        const rtcConfiguration = {
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' }
-            ]
-        };
 
         // Inicialização da aplicação
         document.addEventListener('DOMContentLoaded', function() {
@@ -1227,11 +1622,6 @@
                 loadConsultationHistory(this.value);
             });
 
-            // Período de ganhos
-            document.getElementById('period-select').addEventListener('change', function() {
-                loadEarningsBreakdown(this.value);
-            });
-
             // Edição de perfil
             document.getElementById('edit-profile-btn').addEventListener('click', function() {
                 document.getElementById('edit-name').value = currentDoctor.name;
@@ -1276,9 +1666,7 @@
             });
         }
 
-        // CONFIGURAÇÃO DOS EVENT LISTENERS DO ÁUDIO
         function setupAudioEventListeners() {
-            // SEM event listener para fechar com X - chamada só termina com botões
             document.getElementById('audio-btn-not-suitable-online').addEventListener('click', function() {
                 endCallWithReason('not_suitable_online');
             });
@@ -1287,6 +1675,129 @@
             });
             document.getElementById('audio-btn-complete-consultation').addEventListener('click', completeConsultationFromAudioCall);
             document.getElementById('toggle-audio-mic').addEventListener('click', toggleAudioMicrophone);
+        }
+
+        function toggleAudioMicrophone() {
+            if (doctorWebRTCService.localStream) {
+                const audioTracks = doctorWebRTCService.localStream.getAudioTracks();
+                audioTracks.forEach(track => {
+                    track.enabled = !track.enabled;
+                });
+                const isMicMuted = !audioTracks[0].enabled;
+                
+                const btn = document.getElementById('toggle-audio-mic');
+                btn.classList.toggle('active', isMicMuted);
+                btn.innerHTML = isMicMuted ? 
+                    '<i class="fas fa-microphone-slash"></i><span>Ativar Áudio</span>' :
+                    '<i class="fas fa-microphone"></i><span>Mudo</span>';
+            }
+        }
+
+        async function endCallWithReason(reason) {
+            try {
+                let endReason = '';
+                
+                switch(reason) {
+                    case 'not_suitable_online':
+                        endReason = 'Não adequado para atendimento online';
+                        await updateConsultationStatus('rejected');
+                        break;
+                    case 'not_my_specialty':
+                        endReason = 'Não adequado para minha especialização';
+                        await updateConsultationStatus('rejected');
+                        break;
+                }
+                
+                await callManager.endCall(reason);
+                
+            } catch (error) {
+                console.error('Erro ao terminar chamada:', error);
+                alert('Erro ao terminar chamada: ' + error.message);
+            }
+        }
+
+        async function completeConsultationFromAudioCall() {
+            if (!callManager.consultationId) return;
+            
+            if (!callManager.canCompleteConsultation()) {
+                alert('Por favor, guarde as notas médicas antes de concluir a consulta.');
+                return;
+            }
+            
+            try {
+                const { error } = await supabase
+                    .from('consultations')
+                    .update({ status: 'completed' })
+                    .eq('id', callManager.consultationId);
+                
+                if (error) throw error;
+                
+                const newTotalIncome = (currentDoctor.total_income || 0) + 15;
+                const newAvailableBalance = (currentDoctor.available_balance || 0) + 15;
+                const newConsultationsCount = (currentDoctor.consultations_count || 0) + 1;
+                
+                const { error: updateError } = await supabase
+                    .from('doctors')
+                    .update({ 
+                        total_income: newTotalIncome,
+                        available_balance: newAvailableBalance,
+                        consultations_count: newConsultationsCount
+                    })
+                    .eq('order_number', currentDoctor.order_number);
+                
+                if (updateError) throw updateError;
+                
+                currentDoctor.total_income = newTotalIncome;
+                currentDoctor.available_balance = newAvailableBalance;
+                currentDoctor.consultations_count = newConsultationsCount;
+                localStorage.setItem('drgo_current_doctor', JSON.stringify(currentDoctor));
+                
+                await callManager.endCall('completed');
+                
+                alert('Consulta concluída com sucesso!');
+                document.getElementById('consultation-record-modal').classList.remove('active');
+                
+                loadDoctorData();
+                loadConsultationsPage();
+                
+            } catch (error) {
+                alert('Erro ao concluir consulta: ' + error.message);
+            }
+        }
+
+        async function saveDoctorNotes() {
+            const observation = document.getElementById('observation-doctor').value;
+            const intervention = document.getElementById('intervention-doctor').value;
+            
+            if (!observation || !intervention) {
+                alert('Por favor, preencha a observação e a intervenção médica.');
+                return;
+            }
+            
+            if (!callManager.consultationId) {
+                alert('Erro: ID da consulta não encontrado.');
+                return;
+            }
+            
+            try {
+                const { error } = await supabase
+                    .from('consultations')
+                    .update({
+                        observation_doctor: observation,
+                        intervention_doctor: intervention
+                    })
+                    .eq('id', callManager.consultationId);
+                
+                if (error) throw error;
+                
+                callManager.notesSaved = true;
+                callUIManager.updateCompleteButton(callManager.canCompleteConsultation());
+                
+                alert('Notas médicas guardadas com sucesso!');
+                
+            } catch (error) {
+                alert('Erro ao guardar notas médicas: ' + error.message);
+            }
         }
 
         // Funções de autenticação
@@ -1300,7 +1811,6 @@
             }
             
             try {
-                // Buscar médico na tabela doctors por número de ordem
                 const { data, error } = await supabase
                     .from('doctors')
                     .select('*')
@@ -1342,7 +1852,6 @@
             }
             
             try {
-                // Verificar se já existe médico com este número de ordem
                 const { data: existingDoctor, error: checkError } = await supabase
                     .from('doctors')
                     .select('*')
@@ -1354,10 +1863,8 @@
                     return;
                 }
                 
-                // Gerar ID único para o médico
                 const doctorId = 'DR' + orderNumber + Math.floor(Math.random() * 1000);
                 
-                // Inserir novo médico na base de dados
                 const { data, error } = await supabase
                     .from('doctors')
                     .insert([{
@@ -1399,6 +1906,7 @@
                     supabase.removeChannel(realtimeSubscription);
                 }
                 
+                callManager.endCall('logout');
                 showAuthPage();
             }
         }
@@ -1433,11 +1941,9 @@
         function loadDoctorData() {
             if (!currentDoctor) return;
             
-            // Atualizar dados do médico na interface
             document.getElementById('available-balance').textContent = (currentDoctor.available_balance || 0) + '€';
             document.getElementById('total-consultations').textContent = (currentDoctor.consultations_count || 0) + ' consultas concluídas';
             
-            // Atualizar disponibilidade
             isAvailable = currentDoctor.is_available || false;
             updateAvailabilityUI();
         }
@@ -1451,7 +1957,7 @@
             document.getElementById('profile-consultations').textContent = currentDoctor.consultations_count || 0;
             document.getElementById('profile-income').textContent = (currentDoctor.total_income || 0) + '€';
             
-            loadEarningsBreakdown('today');
+            loadEarningsBreakdown();
         }
 
         async function saveProfile() {
@@ -1534,7 +2040,6 @@
             isAvailable = document.getElementById('availability-checkbox').checked;
             
             try {
-                // Atualizar status no Supabase
                 const { error } = await supabase
                     .from('doctors')
                     .update({ is_available: isAvailable })
@@ -1542,7 +2047,6 @@
                 
                 if (error) throw error;
                 
-                // Atualizar médico local
                 currentDoctor.is_available = isAvailable;
                 localStorage.setItem('drgo_current_doctor', JSON.stringify(currentDoctor));
                 
@@ -1550,7 +2054,6 @@
                 
                 if (isAvailable) {
                     console.log('Médico disponível - carregando consultas em espera');
-                    // Carregar consultas imediatamente ao ficar disponível
                     await loadWaitingConsultations();
                 } else {
                     console.log('Médico indisponível - limpando lista de espera');
@@ -1561,7 +2064,6 @@
             } catch (error) {
                 console.error('Erro ao atualizar disponibilidade:', error);
                 alert('Erro ao atualizar disponibilidade: ' + error.message);
-                // Reverter o estado do checkbox em caso de erro
                 document.getElementById('availability-checkbox').checked = !isAvailable;
                 isAvailable = !isAvailable;
             }
@@ -1603,19 +2105,16 @@
                     (payload) => {
                         console.log('Consulta atualizada:', payload.new.status);
                         
-                        // Se uma consulta em espera foi aceita ou rejeitada
                         if (payload.old.status === 'searching' && payload.new.status !== 'searching') {
                             console.log('Consulta removida da lista de espera');
                             loadWaitingConsultations();
                         }
                         
-                        // Se uma consulta voltou para searching (caso raro)
                         if (payload.old.status !== 'searching' && payload.new.status === 'searching') {
                             console.log('Consulta voltou para espera');
                             loadWaitingConsultations();
                         }
                         
-                        // Sempre atualizar o histórico
                         loadConsultationHistory();
                     }
                 )
@@ -1623,7 +2122,6 @@
                     console.log('Status da subscrição:', status);
                     if (status === 'SUBSCRIBED') {
                         console.log('Ouvindo mudanças em consultas em tempo real');
-                        // Carregar consultas imediatamente após subscrição
                         if (isAvailable) {
                             loadWaitingConsultations();
                         }
@@ -1659,8 +2157,6 @@
                     let consultasExibidas = 0;
                     
                     consultations.forEach(consultation => {
-                        // MOSTRAR TODAS as consultas com status 'searching'
-                        // Não filtrar por doctor_id, pois queremos que todos os médicos disponíveis vejam
                         const bar = createConsultationBar(consultation);
                         container.appendChild(bar);
                         consultasExibidas++;
@@ -1682,18 +2178,16 @@
             }
         }
 
-        // FUNÇÃO MODIFICADA: Aceitar consulta com WebRTC de áudio
         async function acceptConsultation(consultationId) {
             if (!currentDoctor) return;
             
             try {
                 console.log(`Aceitando consulta: ${consultationId}`);
                 
-                // Atualizar consulta
                 const { error } = await supabase
                     .from('consultations')
                     .update({ 
-                        status: 'in_progress',
+                        status: 'in-call',
                         doctor: currentDoctor.name,
                         doctor_id: currentDoctor.doctor_id
                     })
@@ -1701,14 +2195,9 @@
                 
                 if (error) throw error;
                 
-                currentConsultationId = consultationId;
-                
                 console.log('Consulta aceita - iniciando chamada de áudio');
+                await callManager.startCall(consultationId);
                 
-                // INICIAR CHAMADA DE ÁUDIO
-                await startAudioCall(consultationId);
-                
-                // Buscar dados da consulta
                 const { data: consultation, error: fetchError } = await supabase
                     .from('consultations')
                     .select('*')
@@ -1721,585 +2210,22 @@
                     viewConsultationRecord(consultation);
                 }
                 
-                // A lista de espera será atualizada automaticamente via subscrição
-                
             } catch (error) {
                 console.error('Erro ao aceitar consulta:', error);
                 alert('Erro ao aceitar consulta: ' + error.message);
             }
         }
 
-        // INICIAR CHAMADA DE ÁUDIO COM JANELA FLUTUANTE
-        async function startAudioCall(consultationId) {
-            currentConsultationId = consultationId;
-            audioCallActive = true;
-
-            try {
-                // Mostrar JANELA FLUTUANTE em vez de modal
-                document.getElementById('audio-call-window').style.display = 'block';
-                updateAudioCallStatus('Conectando com o paciente...', 'connecting');
-
-                // Iniciar stream local de áudio
-                await startAudioStream();
-                
-                // Configurar WebRTC
-                await setupAudioWebRTC();
-                
-                // Configurar sinalização
-                await setupAudioSignaling(consultationId);
-                
-                // Criar oferta
-                await createAudioOffer();
-
-                // Iniciar temporizador
-                startAudioCallTimer();
-
-            } catch (error) {
-                console.error('Erro ao iniciar chamada de áudio:', error);
-                updateAudioCallStatus('Erro na conexão: ' + error.message, 'error');
-            }
-        }
-
-        // INICIAR STREAM DE ÁUDIO
-        async function startAudioStream() {
-            try {
-                localStream = await navigator.mediaDevices.getUserMedia({
-                    audio: {
-                        echoCancellation: true,
-                        noiseSuppression: true,
-                        autoGainControl: true,
-                        channelCount: 1
-                    },
-                    video: false
-                });
-
-                console.log("Stream de áudio iniciada com sucesso");
-
-            } catch (error) {
-                console.error('Erro ao acessar microfone:', error);
-                throw new Error('Não foi possível acessar o microfone');
-            }
-        }
-
-        // CONFIGURAR WEBRTC APENAS ÁUDIO
-        async function setupAudioWebRTC() {
-            peerConnection = new RTCPeerConnection(rtcConfiguration);
-
-            // Adicionar stream local de áudio
-            localStream.getTracks().forEach(track => {
-                peerConnection.addTrack(track, localStream);
-            });
-
-            // Configurar stream remoto
-            peerConnection.ontrack = (event) => {
-                remoteStream = event.streams[0];
-                
-                // Criar elemento de áudio para o stream remoto
-                const remoteAudio = new Audio();
-                remoteAudio.srcObject = remoteStream;
-                remoteAudio.play();
-                
-                updateAudioCallStatus('Conectado com o paciente', 'connected');
-            };
-
-            // Candidatos ICE
-            peerConnection.onicecandidate = (event) => {
-                if (event.candidate) {
-                    sendSignalingMessage(currentRoomId, 'ice-candidate', event.candidate);
-                }
-            };
-
-            // Estado da conexão
-            peerConnection.onconnectionstatechange = () => {
-                const state = peerConnection.connectionState;
-                if (state === 'connected') {
-                    updateAudioCallStatus('Conectado com o paciente', 'connected');
-                } else if (state === 'disconnected' || state === 'failed') {
-                    updateAudioCallStatus('Conexão perdida', 'error');
-                }
-            };
-        }
-
-        // CRIAR OFERTA DE ÁUDIO
-        async function createAudioOffer() {
-            const offer = await peerConnection.createOffer();
-            await peerConnection.setLocalDescription(offer);
-            sendSignalingMessage(currentRoomId, 'offer', offer);
-        }
-
-        // CONFIGURAR SINALIZAÇÃO DE ÁUDIO
-        async function setupAudioSignaling(consultationId) {
-            try {
-                // Criar ou juntar-se à sala de sinalização
-                const roomName = `consultation-${consultationId}`;
-                
-                let { data: room, error: roomError } = await supabase
-                    .from('signaling_rooms')
-                    .select('*')
-                    .eq('consultation_id', consultationId)
-                    .single();
-
-                if (roomError || !room) {
-                    // Criar nova sala
-                    const { data: newRoom, error: createError } = await supabase
-                        .from('signaling_rooms')
-                        .insert([{
-                            consultation_id: consultationId,
-                            doctor_id: currentDoctor.doctor_id,
-                            room_name: roomName,
-                            status: 'active'
-                        }])
-                        .select()
-                        .single();
-
-                    if (createError) throw createError;
-                    room = newRoom;
-                    console.log('Nova sala de sinalização criada:', room);
-                } else {
-                    console.log('Sala de sinalização existente:', room);
-                }
-
-                currentRoomId = room.id;
-
-                // Subscrever a mensagens de sinalização
-                signalingChannel = supabase
-                    .channel(`signaling-${consultationId}`)
-                    .on(
-                        'postgres_changes',
-                        {
-                            event: 'INSERT',
-                            schema: 'public',
-                            table: 'signaling_messages',
-                            filter: `room_id=eq.${room.id}`
-                        },
-                        (payload) => {
-                            handleSignalingMessage(payload.new);
-                        }
-                    )
-                    .subscribe();
-
-            } catch (error) {
-                console.error('Erro ao configurar sinalização:', error);
-            }
-        }
-
-        // ENVIAR MENSAGENS DE SINALIZAÇÃO
-        async function sendSignalingMessage(roomId, messageType, data) {
-            try {
-                const { error } = await supabase
-                    .from('signaling_messages')
-                    .insert([{
-                        room_id: roomId,
-                        from_user: currentDoctor.doctor_id,
-                        message_type: messageType,
-                        sdp: messageType === 'offer' || messageType === 'answer' ? JSON.stringify(data) : null,
-                        candidate: messageType === 'ice-candidate' ? JSON.stringify(data) : null
-                    }]);
-
-                if (error) throw error;
-                
-            } catch (error) {
-                console.error('Erro ao enviar mensagem de sinalização:', error);
-            }
-        }
-
-        // MANIPULAR MENSAGENS DE SINALIZAÇÃO
-        async function handleSignalingMessage(message) {
-            if (message.from_user === currentDoctor.doctor_id) return;
-
-            try {
-                switch (message.message_type) {
-                    case 'offer':
-                        await handleAudioOffer(JSON.parse(message.sdp));
-                        break;
-                    case 'answer':
-                        await handleAudioAnswer(JSON.parse(message.sdp));
-                        break;
-                    case 'ice-candidate':
-                        await handleAudioIceCandidate(JSON.parse(message.candidate));
-                        break;
-                    case 'end-call':
-                        endAudioCall();
-                        break;
-                }
-            } catch (error) {
-                console.error('Erro ao processar mensagem de sinalização:', error);
-            }
-        }
-
-        // MANIPULAR OFERTA DE ÁUDIO
-        async function handleAudioOffer(offer) {
-            if (peerConnection) {
-                await peerConnection.setRemoteDescription(offer);
-                const answer = await peerConnection.createAnswer();
-                await peerConnection.setLocalDescription(answer);
-                sendSignalingMessage(currentRoomId, 'answer', answer);
-            }
-        }
-
-        // MANIPULAR RESPOSTA DE ÁUDIO
-        async function handleAudioAnswer(answer) {
-            if (peerConnection) {
-                await peerConnection.setRemoteDescription(answer);
-            }
-        }
-
-        // MANIPULAR CANDIDATO ICE DE ÁUDIO
-        async function handleAudioIceCandidate(candidate) {
-            if (peerConnection) {
-                await peerConnection.addIceCandidate(candidate);
-            }
-        }
-
-        // CONTROLAR MICROFONE
-        function toggleAudioMicrophone() {
-            if (localStream) {
-                const audioTracks = localStream.getAudioTracks();
-                audioTracks.forEach(track => {
-                    track.enabled = !track.enabled;
-                });
-                isMicMuted = !audioTracks[0].enabled;
-                
-                const btn = document.getElementById('toggle-audio-mic');
-                btn.classList.toggle('active', isMicMuted);
-                btn.innerHTML = isMicMuted ? 
-                    '<i class="fas fa-microphone-slash"></i><span>Ativar Áudio</span>' :
-                    '<i class="fas fa-microphone"></i><span>Mudo</span>';
-            }
-        }
-
-        // ATUALIZAR STATUS DA CHAMADA DE ÁUDIO
-        function updateAudioCallStatus(message, type) {
-            const statusElement = document.getElementById('audio-call-status');
-            statusElement.textContent = message;
-            statusElement.className = `call-status-indicator status-${type}`;
-            
-            if (type === 'connected') {
-                statusElement.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
-            } else if (type === 'connecting') {
-                statusElement.innerHTML = `<i class="fas fa-sync-alt fa-spin"></i> ${message}`;
-            } else if (type === 'error') {
-                statusElement.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${message}`;
-            }
-        }
-
-        // TEMPORIZADOR DE CHAMADA DE ÁUDIO
-        function startAudioCallTimer() {
-            callSeconds = 0;
-            updateAudioCallTimerDisplay();
-            
-            callTimer = setInterval(() => {
-                callSeconds++;
-                updateAudioCallTimerDisplay();
-                updateAudioVisualizer();
-            }, 1000);
-        }
-
-        function updateAudioCallTimerDisplay() {
-            const minutes = Math.floor(callSeconds / 60);
-            const seconds = callSeconds % 60;
-            document.getElementById('audio-call-duration').textContent = 
-                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        }
-
-        function updateAudioVisualizer() {
-            const bars = document.querySelectorAll('#audio-visualizer .audio-bar');
-            bars.forEach((bar, index) => {
-                const height = 20 + Math.random() * 60;
-                bar.style.height = `${height}%`;
-            });
-        }
-
-        // TERMINAR CHAMADA DE ÁUDIO
-        async function endAudioCall() {
-            if (audioCallActive) {
-                // Enviar mensagem de fim de chamada
-                if (currentRoomId) {
-                    sendSignalingMessage(currentRoomId, 'end-call', {});
-                }
-                
-                // Parar streams
-                if (localStream) {
-                    localStream.getTracks().forEach(track => track.stop());
-                    localStream = null;
-                }
-                
-                // Fechar conexão WebRTC
-                if (peerConnection) {
-                    peerConnection.close();
-                    peerConnection = null;
-                }
-                
-                // Parar temporizador
-                if (callTimer) {
-                    clearInterval(callTimer);
-                    callTimer = null;
-                }
-                
-                // Remover subscription
-                if (signalingChannel) {
-                    supabase.removeChannel(signalingChannel);
-                    signalingChannel = null;
-                }
-                
-                // FECHAR JANELA FLUTUANTE
-                document.getElementById('audio-call-window').style.display = 'none';
-                audioCallActive = false;
-                currentRoomId = null;
-                
-                // Atualizar interface
-                loadConsultationsPage();
-            }
-        }
-
-        // CONCLUIR CONSULTA DO ÁUDIO
-        async function completeConsultationFromAudioCall() {
-            if (!currentConsultationId) return;
-            
-            try {
-                // Primeiro salvar notas se necessário
-                if (!notesSaved) {
-                    await saveDoctorNotes();
-                }
-                
-                // Atualizar status
-                const { error } = await supabase
-                    .from('consultations')
-                    .update({ status: 'completed' })
-                    .eq('id', currentConsultationId);
-                
-                if (error) throw error;
-                
-                // Adicionar ganhos
-                const newTotalIncome = (currentDoctor.total_income || 0) + 15;
-                const newAvailableBalance = (currentDoctor.available_balance || 0) + 15;
-                const newConsultationsCount = (currentDoctor.consultations_count || 0) + 1;
-                
-                const { error: updateError } = await supabase
-                    .from('doctors')
-                    .update({ 
-                        total_income: newTotalIncome,
-                        available_balance: newAvailableBalance,
-                        consultations_count: newConsultationsCount
-                    })
-                    .eq('order_number', currentDoctor.order_number);
-                
-                if (updateError) throw updateError;
-                
-                // Atualizar médico local
-                currentDoctor.total_income = newTotalIncome;
-                currentDoctor.available_balance = newAvailableBalance;
-                currentDoctor.consultations_count = newConsultationsCount;
-                localStorage.setItem('drgo_current_doctor', JSON.stringify(currentDoctor));
-                
-                // Terminar chamada
-                await endAudioCall();
-                
-                alert('Consulta concluída com sucesso!');
-                document.getElementById('consultation-record-modal').classList.remove('active');
-                
-                // Atualizar interface
-                loadDoctorData();
-                loadConsultationsPage();
-                
-            } catch (error) {
-                alert('Erro ao concluir consulta: ' + error.message);
-            }
-        }
-
-        async function saveDoctorNotes() {
-            const observation = document.getElementById('observation-doctor').value;
-            const intervention = document.getElementById('intervention-doctor').value;
-            
-            if (!observation || !intervention) {
-                alert('Por favor, preencha a observação e a intervenção médica.');
-                return;
-            }
-            
-            if (!currentConsultationId) {
-                alert('Erro: ID da consulta não encontrado.');
-                return;
-            }
-            
-            try {
-                // Apenas atualizar as notas do médico, SEM alterar o status
-                const { error } = await supabase
-                    .from('consultations')
-                    .update({
-                        observation_doctor: observation,
-                        intervention_doctor: intervention
-                    })
-                    .eq('id', currentConsultationId);
-                
-                if (error) throw error;
-                
-                // Marcar que as notas foram salvas
-                notesSaved = true;
-                document.getElementById('audio-btn-complete-consultation').disabled = false;
-                
-                alert('Notas médicas guardadas com sucesso! Agora pode concluir a consulta.');
-                
-            } catch (error) {
-                alert('Erro ao guardar notas médicas: ' + error.message);
-            }
-        }
-
-        async function completeConsultation() {
-            if (!currentConsultationId) {
-                alert('Erro: ID da consulta não encontrado.');
-                return;
-            }
-            
-            if (!notesSaved) {
-                alert('Por favor, guarde primeiro as notas médicas antes de concluir a consulta.');
-                return;
-            }
-            
-            try {
-                // Atualizar status para 'completed'
-                const { error } = await supabase
-                    .from('consultations')
-                    .update({ 
-                        status: 'completed'
-                    })
-                    .eq('id', currentConsultationId);
-                
-                if (error) throw error;
-                
-                // Adicionar ganhos ao médico
-                const newTotalIncome = (currentDoctor.total_income || 0) + 15;
-                const newAvailableBalance = (currentDoctor.available_balance || 0) + 15;
-                const newConsultationsCount = (currentDoctor.consultations_count || 0) + 1;
-                
-                const { error: updateError } = await supabase
-                    .from('doctors')
-                    .update({ 
-                        total_income: newTotalIncome,
-                        available_balance: newAvailableBalance,
-                        consultations_count: newConsultationsCount
-                    })
-                    .eq('order_number', currentDoctor.order_number);
-                
-                if (updateError) throw updateError;
-                
-                // Atualizar médico local
-                currentDoctor.total_income = newTotalIncome;
-                currentDoctor.available_balance = newAvailableBalance;
-                currentDoctor.consultations_count = newConsultationsCount;
-                localStorage.setItem('drgo_current_doctor', JSON.stringify(currentDoctor));
-                
-                // Terminar chamada
-                await endCallWithReason('normal_end');
-                
-                alert('Consulta concluída com sucesso!');
-                document.getElementById('consultation-record-modal').classList.remove('active');
-                
-                // Resetar estado
-                notesSaved = false;
-                
-                // Atualizar interface
-                loadDoctorData();
-                loadConsultationsPage();
-                
-            } catch (error) {
-                alert('Erro ao concluir consulta: ' + error.message);
-            }
-        }
-
-        async function endCallWithReason(reason) {
-            if (!currentConsultationId) return;
-            
-            try {
-                let endReason = '';
-                
-                switch(reason) {
-                    case 'not_suitable_online':
-                        endReason = 'Não adequado para atendimento online';
-                        await updateConsultationStatus('rejected');
-                        break;
-                    case 'not_my_specialty':
-                        endReason = 'Não adequado para minha especialização';
-                        await updateConsultationStatus('rejected');
-                        break;
-                    case 'normal_end':
-                        endReason = 'Consulta terminada normalmente';
-                        break;
-                }
-                
-                // Criar registro na tabela calls
-                await createCallRecord(endReason);
-                
-                endAudioCall();
-                loadConsultationsPage();
-                
-                // Resetar estado
-                notesSaved = false;
-                
-            } catch (error) {
-                console.error('Erro ao terminar chamada:', error);
-                alert('Erro ao terminar chamada: ' + error.message);
-            }
-        }
-
-        async function updateConsultationStatus(status) {
+        async function updateConsultationStatus(consultationId, status) {
             try {
                 const { error } = await supabase
                     .from('consultations')
                     .update({ status: status })
-                    .eq('id', currentConsultationId);
+                    .eq('id', consultationId);
                 
                 if (error) throw error;
             } catch (error) {
                 console.error('Erro ao atualizar status da consulta:', error);
-            }
-        }
-
-        async function createCallRecord(endReason) {
-            try {
-                if (!currentConsultationId || !currentDoctor || !currentDoctor.doctor_id) {
-                    console.error('Dados insuficientes para criar registo de chamada');
-                    return;
-                }
-
-                // Buscar pharmacist_id da consulta
-                const { data: consultation, error: consultationError } = await supabase
-                    .from('consultations')
-                    .select('pharmacist_id')
-                    .eq('id', currentConsultationId)
-                    .single();
-
-                if (consultationError) {
-                    console.error('Erro ao buscar consulta:', consultationError);
-                    return;
-                }
-
-                const callData = {
-                    consultation_id: parseInt(currentConsultationId),
-                    doctor_id: currentDoctor.doctor_id,
-                    end_reason: endReason,
-                    duration: callSeconds,
-                    pharmacist_id: consultation.pharmacist_id || 'unknown',
-                    initiated_by: 'doctor',
-                    session_status: 'completed',
-                    ended_at: new Date().toISOString()
-                };
-
-                console.log('Inserindo na tabela calls:', callData);
-
-                const { data, error } = await supabase
-                    .from('calls')
-                    .insert([callData])
-                    .select();
-
-                if (error) {
-                    console.error('Erro ao criar registo de chamada:', error);
-                    throw error;
-                }
-
-                console.log('Registo de chamada criado com sucesso:', data);
-                
-            } catch (error) {
-                console.error('Erro ao criar registo de chamada:', error);
             }
         }
 
@@ -2389,15 +2315,24 @@
             card.className = 'consultation-card';
             const details = consultation.details || {};
             
-            let statusText = 'Concluída';
-            let statusClass = 'status-completed';
+            let statusText, statusClass;
             
-            if (consultation.status === 'in_progress') {
-                statusText = 'Em Andamento';
-                statusClass = 'status-pending';
-            } else if (consultation.status === 'rejected') {
-                statusText = 'Rejeitada';
-                statusClass = 'status-waiting';
+            switch(consultation.status) {
+                case 'completed':
+                    statusText = 'Concluída';
+                    statusClass = 'status-completed';
+                    break;
+                case 'in-call':
+                    statusText = 'Em chamada';
+                    statusClass = 'status-in-call';
+                    break;
+                case 'rejected':
+                    statusText = 'Rejeitada';
+                    statusClass = 'status-waiting';
+                    break;
+                default:
+                    statusText = consultation.status || 'Desconhecido';
+                    statusClass = 'status-waiting';
             }
             
             card.innerHTML = `
@@ -2435,10 +2370,8 @@
             const content = document.getElementById('consultation-record-content');
             const details = consultation.details || {};
             
-            currentConsultationId = consultation.id;
-            
-            // Resetar estado das notas
-            notesSaved = false;
+            callManager.consultationId = consultation.id;
+            callManager.notesSaved = false;
             
             let detailsHTML = `
                 <div class="detail-row">
@@ -2488,7 +2421,6 @@
             if (details.allergies) detailsHTML += `<div class="detail-row"><div class="detail-label">Alergias:</div><div class="detail-value">${details.allergies}</div></div>`;
             if (details.otherInfo) detailsHTML += `<div class="detail-row"><div class="detail-label">Outras Indicações:</div><div class="detail-value">${details.otherInfo}</div></div>`;
             
-            // Mostrar fotos se existirem
             if (consultation.photos && consultation.photos.length > 0) {
                 detailsHTML += `
                     <div class="detail-row">
@@ -2508,7 +2440,6 @@
             
             content.innerHTML = detailsHTML;
             
-            // Preencher campos do médico se já existirem
             if (consultation.observation_doctor) {
                 document.getElementById('observation-doctor').value = consultation.observation_doctor;
             } else {
@@ -2521,7 +2452,6 @@
                 document.getElementById('intervention-doctor').value = '';
             }
 
-            // Controlar editabilidade dos campos
             if (consultation.status === 'completed' || consultation.status === 'rejected') {
                 document.getElementById('observation-doctor').disabled = true;
                 document.getElementById('intervention-doctor').disabled = true;
@@ -2533,23 +2463,19 @@
                 document.getElementById('save-doctor-notes').disabled = false;
                 document.getElementById('save-doctor-notes').innerHTML = '<i class="fas fa-save"></i> Guardar';
                 
-                // Verificar se já existem notas salvas
                 if (consultation.observation_doctor && consultation.intervention_doctor) {
-                    notesSaved = true;
-                    document.getElementById('audio-btn-complete-consultation').disabled = false;
+                    callManager.notesSaved = true;
+                    callUIManager.updateCompleteButton(callManager.canCompleteConsultation());
                 } else {
-                    notesSaved = false;
-                    document.getElementById('audio-btn-complete-consultation').disabled = true;
+                    callManager.notesSaved = false;
+                    callUIManager.updateCompleteButton(false);
                 }
             }
             
             document.getElementById('consultation-record-modal').classList.add('active');
-
-            // Configurar funcionalidade de zoom nas imagens
             setupImageZoom();
         }
 
-        // Configurar zoom nas imagens
         function setupImageZoom() {
             document.querySelectorAll('.zoomable-image').forEach(img => {
                 img.style.cursor = 'zoom-in';
@@ -2560,50 +2486,29 @@
             });
         }
 
-        async function loadEarningsBreakdown(period) {
+        async function loadEarningsBreakdown() {
             if (!currentDoctor) return;
             
             try {
-                let startDate;
-                const today = new Date();
-                
-                switch (period) {
-                    case 'today':
-                        startDate = today.toISOString().split('T')[0];
-                        break;
-                    case 'week':
-                        startDate = new Date(today.setDate(today.getDate() - 7)).toISOString().split('T')[0];
-                        break;
-                    case 'month':
-                        startDate = new Date(today.setMonth(today.getMonth() - 1)).toISOString().split('T')[0];
-                        break;
-                    default:
-                        startDate = null;
-                }
-                
-                let query = supabase
+                const { data: consultations, error } = await supabase
                     .from('consultations')
                     .select('*')
                     .eq('doctor_id', currentDoctor.doctor_id)
                     .eq('status', 'completed');
                 
-                if (startDate) {
-                    query = query.gte('date', startDate);
-                }
-                
-                const { data: consultations, error } = await query;
-                
                 if (error) throw error;
                 
-                const earnings = consultations ? consultations.length * 15 : 0;
+                const totalConsultations = consultations ? consultations.length : 0;
+                const totalEarnings = totalConsultations * 15;
+                
                 const container = document.getElementById('earnings-breakdown');
                 
                 container.innerHTML = `
                     <div class="consultation-card">
-                        <div class="patient-name">Resumo do Período</div>
-                        <div><strong>Total de Consultas Concluídas:</strong> ${consultations ? consultations.length : 0}</div>
+                        <div class="patient-name">Resumo Total</div>
+                        <div><strong>Total de Consultas Concluídas:</strong> ${totalConsultations}</div>
                         <div><strong>Valor por Consulta:</strong> 15€</div>
-                        <div><strong>Rendimento Total:</strong> <span style="color: var(--success-color); font-weight: bold;">${earnings}€</span></div>
+                        <div><strong>Total Ganho:</strong> <span style="color: var(--success-color); font-weight: bold;">${totalEarnings}€</span></div>
                     </div>
                 `;
                 
