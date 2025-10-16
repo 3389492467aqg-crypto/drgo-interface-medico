@@ -1139,6 +1139,7 @@
             localStream: null,
             remoteStream: null,
             currentState: 'idle', // idle, offer-sent, answer-sent, connected
+	    pendingCandidates: [],
 
             async initializeCall(consultationId, doctorId) {
                 try {
@@ -1244,6 +1245,8 @@
                 if (this.peerConnection && this.peerConnection.signalingState === 'stable') {
                     try {
                         await this.peerConnection.setRemoteDescription(offer);
+			console.log('✅ Remote description definido para answer');
+			await this.processPendingCandidates();
                         const answer = await this.peerConnection.createAnswer();
                         await this.peerConnection.setLocalDescription(answer);
                         await signalingService.sendMessage('answer', answer);
@@ -1259,6 +1262,7 @@
                     try {
                         await this.peerConnection.setRemoteDescription(answer);
                         console.log('Answer processado, estado:', this.peerConnection.signalingState);
+			await this.processPendingCandidates();
                     } catch (error) {
                         console.error('Erro ao processar answer:', error);
                     }
@@ -1266,14 +1270,48 @@
             },
 
             async handleCandidate(candidate) {
-                if (this.peerConnection) {
-                    try {
-                        await this.peerConnection.addIceCandidate(candidate);
-                    } catch (error) {
-                        console.error('Erro ao adicionar ICE candidate:', error);
-                    }
-                }
-            },
+    if (!this.peerConnection) {
+        console.log('PeerConnection não disponível para candidate');
+        return;
+    }
+    
+    try {
+        // ✅ VERIFICAR se remote description está definido
+        if (!this.peerConnection.remoteDescription) {
+            console.log('Remote description não definido, armazenando candidate pendente...');
+            this.pendingCandidates.push(candidate);
+            return;
+        }
+        
+        // ✅ Tentar adicionar o candidate
+        await this.peerConnection.addIceCandidate(candidate);
+        console.log('✅ ICE candidate adicionado com sucesso');
+        
+    } catch (error) {
+        console.log('⚠️ ICE candidate ignorado (não crítico):', error.message);
+        // Não throw error - ICE candidates podem falhar sem quebrar a conexão
+    }
+},
+
+async processPendingCandidates() {
+    if (!this.pendingCandidates.length || !this.peerConnection) {
+        return;
+    }
+    
+    console.log(`🔄 Processando ${this.pendingCandidates.length} candidatos pendentes...`);
+    
+    for (const candidate of this.pendingCandidates) {
+        try {
+            await this.peerConnection.addIceCandidate(candidate);
+            console.log('✅ Candidate pendente adicionado');
+        } catch (error) {
+            console.log('⚠️ Candidate pendente ignorado:', error.message);
+        }
+    }
+    
+    // Limpar array após processar
+    this.pendingCandidates = [];
+},
 
             cleanup() {
                 if (this.localStream) {
@@ -1288,7 +1326,7 @@
                 
                 this.remoteStream = null;
                 this.currentState = 'idle';
-                
+                this.pendingCandidates = [];
                 console.log('Recursos WebRTC limpos');
             }
         };
