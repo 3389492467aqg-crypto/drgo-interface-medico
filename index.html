@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+        /* ESTILOS EXISTENTES MANTIDOS */
         :root {
             --pharmacy-purple: #6a1b9a;
             --medicine-yellow: #ffd600;
@@ -1125,1440 +1126,1481 @@
         </div>
     </div>
 
-    <script>
-        // Configuração do Supabase
-        const SUPABASE_URL = 'https://wepdyzexevikboczqstx.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndlcGR5emV4ZXZpa2JvY3pxc3R4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAxMDM1NzEsImV4cCI6MjA3NTY3OTU3MX0.edRnJHOWmY4dtakQFNOIuftEtZbSlpCbhLGdqBhUGSM';
-        
-        // Inicializar Supabase
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // SERVIÇOS UNIFICADOS
-        const doctorWebRTCService = {
-            peerConnection: null,
-            localStream: null,
-            remoteStream: null,
-            currentState: 'idle', // idle, offer-sent, answer-sent, connected
-	    pendingCandidates: [],
+<script>
+    // Configuração do Supabase
+const SUPABASE_URL = 'https://wepdyzexevikboczqstx.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndlcGR5emV4ZXZpa2JvY3pxc3R4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAxMDM1NzEsImV4cCI6MjA3NTY3OTU3MX0.edRnJHOWmY4dtakQFNOIuftEtZbSlpCbhLGdqBhUGSM';
 
-            async initializeCall(consultationId, doctorId) {
-                try {
-                    console.log('Inicializando chamada WebRTC...');
-                    this.currentState = 'initializing';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: true }
+});
 
-                    // Configurar WebRTC
-                    await this.setupAudioStream();
-                    await this.setupPeerConnection();
-                    
-                    // Configurar sinalização
-                    await signalingService.setupSignaling(consultationId, doctorId);
-                    
-                    // Criar oferta
-                    await this.createOffer();
-                    
-                    this.currentState = 'offer-sent';
-                    console.log('Chamada WebRTC inicializada com sucesso');
-                    
-                } catch (error) {
-                    console.error('Erro na inicialização WebRTC:', error);
-                    this.currentState = 'error';
-                    throw error;
-                }
-            },
+// SERVIÇOS UNIFICADOS - CORRIGIDOS
+const doctorWebRTCService = {
+    peerConnection: null,
+    localStream: null,
+    remoteStream: null,
+    currentState: 'idle',
 
-            async setupAudioStream() {
-                try {
-                    this.localStream = await navigator.mediaDevices.getUserMedia({
-                        audio: {
-                            echoCancellation: true,
-                            noiseSuppression: true,
-                            autoGainControl: true,
-                            channelCount: 1
-                        },
-                        video: false
-                    });
-                    console.log("Stream de áudio iniciada com sucesso");
-                } catch (error) {
-                    console.error('Erro ao acessar microfone:', error);
-                    throw new Error('Não foi possível acessar o microfone');
-                }
-            },
+    async initializeCall(consultationId, doctorId) {
+        try {
+            console.log('Inicializando chamada WebRTC...');
+            this.currentState = 'initializing';
 
-            async setupPeerConnection() {
-                const configuration = {
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' }
-                    ]
-                };
+            await this.setupAudioStream();
+            await this.setupPeerConnection();
+            await signalingService.setupSignaling(consultationId, doctorId);
+            
+            this.currentState = 'waiting-for-offer';
+            console.log('Médico aguardando offer do farmacêutico...');
+            
+        } catch (error) {
+            console.error('Erro na inicialização WebRTC:', error);
+            this.currentState = 'error';
+            throw error;
+        }
+    },
 
-                this.peerConnection = new RTCPeerConnection(configuration);
+    async setupAudioStream() {
+        try {
+            this.localStream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                },
+                video: false
+            });
+            console.log("Stream de áudio iniciada com sucesso");
+        } catch (error) {
+            console.error('Erro ao acessar microfone:', error);
+            throw new Error('Não foi possível acessar o microfone.');
+        }
+    },
 
-                // Adicionar tracks locais
-                this.localStream.getTracks().forEach(track => {
-                    this.peerConnection.addTrack(track, this.localStream);
-                });
+    async setupPeerConnection() {
+        const configuration = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+        };
 
-                // Configurar event handlers
-                this.peerConnection.ontrack = (event) => {
-                    this.remoteStream = event.streams[0];
-                    const remoteAudio = new Audio();
-                    remoteAudio.srcObject = this.remoteStream;
-                    remoteAudio.play().catch(e => console.error('Erro ao reproduzir áudio:', e));
-                    this.currentState = 'connected';
-                    callUIManager.updateStatus('Conectado com o paciente', 'connected');
-                };
+        this.peerConnection = new RTCPeerConnection(configuration);
 
-                this.peerConnection.onicecandidate = (event) => {
-                    if (event.candidate) {
-                        signalingService.sendMessage('candidate', event.candidate);
-                    }
-                };
+        // Adicionar tracks locais
+        this.localStream.getTracks().forEach(track => {
+            this.peerConnection.addTrack(track, this.localStream);
+        });
 
-                this.peerConnection.onconnectionstatechange = () => {
-                    const state = this.peerConnection.connectionState;
-                    console.log('Estado da conexão:', state);
-                    
-                    if (state === 'connected') {
-                        this.currentState = 'connected';
-                        callUIManager.updateStatus('Conectado com o paciente', 'connected');
-                    } else if (state === 'disconnected' || state === 'failed') {
-                        this.currentState = 'error';
-                        callUIManager.updateStatus('Conexão perdida', 'error');
-                    }
-                };
-            },
+        // ✅ ONTRACK CORRIGIDO
+        this.peerConnection.ontrack = (event) => {
+            console.log("🎯 ONTRACK: Nova track recebida", event.track.kind);
+            this.remoteStream = event.streams[0];
+            console.log("📦 Stream remoto - tracks:", this.remoteStream.getTracks().length);
+            this.inicializarAudioRemoto();
+            this.currentState = 'connected';
+            callUIManager.updateConnectionState('connected');
+        };
 
-            async createOffer() {
-                try {
-                    const offer = await this.peerConnection.createOffer();
-                    await this.peerConnection.setLocalDescription(offer);
-                    console.log('Offer criado, estado:', this.peerConnection.signalingState);
-                    await signalingService.sendMessage('offer', offer);
-                } catch (error) {
-                    console.error('Erro ao criar offer:', error);
-                    throw error;
-                }
-            },
+        this.peerConnection.onicecandidate = (event) => {
+            if (event.candidate) {
+                signalingService.sendMessage('candidate', event.candidate);
+            }
+        };
 
-            async handleOffer(offer) {
-                if (this.peerConnection && this.peerConnection.signalingState === 'stable') {
-                    try {
-                        await this.peerConnection.setRemoteDescription(offer);
-			console.log('✅ Remote description definido para answer');
-			await this.processPendingCandidates();
-                        const answer = await this.peerConnection.createAnswer();
-                        await this.peerConnection.setLocalDescription(answer);
-                        await signalingService.sendMessage('answer', answer);
-                        this.currentState = 'answer-sent';
-                    } catch (error) {
-                        console.error('Erro ao processar offer:', error);
-                    }
-                }
-            },
+        this.peerConnection.onconnectionstatechange = () => {
+            const state = this.peerConnection.connectionState;
+            console.log('Estado da conexão:', state);
+        };
+    },
 
-            async handleAnswer(answer) {
-                if (this.peerConnection && this.peerConnection.signalingState === 'have-local-offer') {
-                    try {
-                        await this.peerConnection.setRemoteDescription(answer);
-                        console.log('Answer processado, estado:', this.peerConnection.signalingState);
-			await this.processPendingCandidates();
-                    } catch (error) {
-                        console.error('Erro ao processar answer:', error);
-                    }
-                }
-            },
-
-            async handleCandidate(candidate) {
-    if (!this.peerConnection) {
-        console.log('PeerConnection não disponível para candidate');
-        return;
-    }
-    
-    try {
-        // ✅ VERIFICAR se remote description está definido
-        if (!this.peerConnection.remoteDescription) {
-            console.log('Remote description não definido, armazenando candidate pendente...');
-            this.pendingCandidates.push(candidate);
+    // ✅ ÁUDIO REMOTO CORRIGIDO
+    inicializarAudioRemoto() {
+        if (!this.remoteStream) {
+            console.log("❌ Nenhum stream remoto para inicializar áudio");
             return;
         }
         
-        // ✅ Tentar adicionar o candidate
-        await this.peerConnection.addIceCandidate(candidate);
-        console.log('✅ ICE candidate adicionado com sucesso');
+        console.log("🔊 Inicializando áudio remoto...");
         
-    } catch (error) {
-        console.log('⚠️ ICE candidate ignorado (não crítico):', error.message);
-        // Não throw error - ICE candidates podem falhar sem quebrar a conexão
-    }
-},
+        // Remover elemento existente
+        const oldAudio = document.getElementById('remote-audio-element');
+        if (oldAudio) oldAudio.remove();
+        
+        // Criar novo elemento de áudio
+        const audioElement = new Audio();
+        audioElement.id = 'remote-audio-element';
+        audioElement.srcObject = this.remoteStream;
+        audioElement.volume = 1.0;
+        audioElement.autoplay = true;
+        audioElement.style.display = 'none';
+        
+        // Tratar autoplay bloqueado
+        audioElement.play().catch(e => {
+            console.log("🔇 Autoplay bloqueado (normal):", e.message);
+        });
+        
+        audioElement.addEventListener('playing', () => {
+            console.log("🎉 ÁUDIO REMOTO REPRODUZINDO COM SUCESSO!");
+        });
+        
+        document.body.appendChild(audioElement);
+        console.log("✅ Elemento de áudio criado e configurado");
+    },
 
-async processPendingCandidates() {
-    if (!this.pendingCandidates.length || !this.peerConnection) {
-        return;
-    }
-    
-    console.log(`🔄 Processando ${this.pendingCandidates.length} candidatos pendentes...`);
-    
-    for (const candidate of this.pendingCandidates) {
+    async handleOffer(offer) {
+        if (this.peerConnection && this.peerConnection.signalingState === 'stable') {
+            try {
+                await this.peerConnection.setRemoteDescription(offer);
+                console.log('✅ Remote description definido para answer');
+                
+                const answer = await this.peerConnection.createAnswer();
+                await this.peerConnection.setLocalDescription(answer);
+                await signalingService.sendMessage('answer', answer);
+                this.currentState = 'answer-sent';
+                callUIManager.updateConnectionState('answer-sent');
+            } catch (error) {
+                console.error('Erro ao processar offer:', error);
+            }
+        }
+    },
+
+    async handleCandidate(candidate) {
+        if (!this.peerConnection || !this.peerConnection.remoteDescription) {
+            console.log('PeerConnection não pronto para candidate');
+            return;
+        }
+        
         try {
             await this.peerConnection.addIceCandidate(candidate);
-            console.log('✅ Candidate pendente adicionado');
+            console.log('✅ ICE candidate adicionado');
         } catch (error) {
-            console.log('⚠️ Candidate pendente ignorado:', error.message);
+            console.log('⚠️ ICE candidate ignorado:', error.message);
         }
+    },
+
+    cleanup() {
+        if (this.localStream) {
+            this.localStream.getTracks().forEach(track => track.stop());
+            this.localStream = null;
+        }
+        
+        if (this.peerConnection) {
+            this.peerConnection.close();
+            this.peerConnection = null;
+        }
+        
+        this.remoteStream = null;
+        this.currentState = 'idle';
+        console.log('Recursos WebRTC limpos');
     }
-    
-    // Limpar array após processar
-    this.pendingCandidates = [];
-},
-
-            cleanup() {
-                if (this.localStream) {
-                    this.localStream.getTracks().forEach(track => track.stop());
-                    this.localStream = null;
-                }
-                
-                if (this.peerConnection) {
-                    this.peerConnection.close();
-                    this.peerConnection = null;
-                }
-                
-                this.remoteStream = null;
-                this.currentState = 'idle';
-                this.pendingCandidates = [];
-                console.log('Recursos WebRTC limpos');
-            }
-        };
-
-        const signalingService = {
-            roomId: null,
-            channel: null,
-
-            async setupSignaling(consultationId, doctorId) {
-                try {
-                    // Buscar sala existente primeiro
-                    let { data: room, error: roomError } = await supabase
-                        .from('signaling_rooms')
-                        .select('*')
-                        .eq('consultation_id', consultationId)
-                        .single();
-
-                    if (roomError || !room) {
-                        console.log('Criando nova sala de sinalização...');
-                        const roomName = `consultation-${consultationId}`;
-                        const { data: newRoom, error: createError } = await supabase
-                            .from('signaling_rooms')
-                            .insert([{
-                                consultation_id: consultationId,
-                                doctor_id: doctorId,
-                                room_name: roomName,
-                                status: 'active'
-                            }])
-                            .select()
-                            .single();
-
-                        if (createError) throw createError;
-                        room = newRoom;
-                    }
-
-                    this.roomId = room.id;
-
-                    // Configurar subscription
-                    this.channel = supabase
-                        .channel(`signaling-room-${room.id}`)
-                        .on(
-                            'postgres_changes',
-                            {
-                                event: 'INSERT',
-                                schema: 'public',
-                                table: 'signaling_messages',
-                                filter: `room_id=eq.${room.id}`
-                            },
-                            (payload) => {
-                                console.log('Mensagem signaling recebida:', payload.new);
-                                this.handleIncomingMessage(payload.new);
-                            }
-                        )
-                        .subscribe((status) => {
-                            console.log('Status da subscription de signaling:', status);
-                        });
-
-                } catch (error) {
-                    console.error('Erro ao configurar sinalização:', error);
-                    throw error;
-                }
-            },
-
-            async handleIncomingMessage(message) {
-                try {
-                    console.log(`Processando mensagem: ${message.message_type}, Estado: ${doctorWebRTCService.currentState}`);
-                    
-                    switch (message.message_type) {
-                        case 'offer':
-                            if (doctorWebRTCService.currentState === 'idle') {
-                                await doctorWebRTCService.handleOffer(JSON.parse(message.sdp));
-                            }
-                            break;
-                        case 'answer':
-                            if (doctorWebRTCService.currentState === 'offer-sent') {
-                                await doctorWebRTCService.handleAnswer(JSON.parse(message.sdp));
-                            }
-                            break;
-                        case 'candidate':
-                            await doctorWebRTCService.handleCandidate(JSON.parse(message.candidate));
-                            break;
-                        case 'hangup':
-                            callManager.endCall('hangup_received');
-                            break;
-                    }
-                } catch (error) {
-                    console.error('Erro ao processar mensagem de sinalização:', error);
-                }
-            },
-
-            async sendMessage(messageType, data) {
-                try {
-                    const messageData = {
-                        room_id: this.roomId,
-                        from_user: currentDoctor.doctor_id,
-                        message_type: messageType
-                    };
-
-                    if (messageType === 'offer' || messageType === 'answer') {
-                        messageData.sdp = JSON.stringify(data);
-                    } else if (messageType === 'candidate') {
-                        messageData.candidate = JSON.stringify(data);
-                    }
-
-                    const { error } = await supabase
-                        .from('signaling_messages')
-                        .insert([messageData]);
-
-                    if (error) throw error;
-                    console.log(`Mensagem ${messageType} enviada com sucesso`);
-                    
-                } catch (error) {
-                    console.error('Erro ao enviar mensagem de sinalização:', error);
-                }
-            },
-
-            cleanup() {
-                if (this.channel) {
-                    supabase.removeChannel(this.channel);
-                    this.channel = null;
-                }
-                this.roomId = null;
-            }
-        };
-
-        const callUIManager = {
-            updateStatus(message, type) {
-                const statusElement = document.getElementById('audio-call-status');
-                statusElement.textContent = message;
-                statusElement.className = `call-status-indicator status-${type}`;
-                
-                if (type === 'connected') {
-                    statusElement.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
-                } else if (type === 'connecting') {
-                    statusElement.innerHTML = `<i class="fas fa-sync-alt fa-spin"></i> ${message}`;
-                } else if (type === 'error') {
-                    statusElement.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${message}`;
-                }
-            },
-
-            updateTimer(seconds) {
-                const minutes = Math.floor(seconds / 60);
-                const secs = seconds % 60;
-                document.getElementById('audio-call-duration').textContent = 
-                    `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-            },
-
-            updateVisualizer() {
-                const bars = document.querySelectorAll('#audio-visualizer .audio-bar');
-                bars.forEach((bar, index) => {
-                    const height = 20 + Math.random() * 60;
-                    bar.style.height = `${height}%`;
-                });
-            },
-
-            updateCompleteButton(enabled) {
-                const btn = document.getElementById('audio-btn-complete-consultation');
-                btn.disabled = !enabled;
-            },
-
-            showCallWindow() {
-                document.getElementById('audio-call-window').style.display = 'block';
-            },
-
-            hideCallWindow() {
-                document.getElementById('audio-call-window').style.display = 'none';
-            }
-        };
-
-        const callManager = {
-            consultationId: null,
-            callTimer: null,
-            callSeconds: 0,
-            notesSaved: false,
-
-            async startCall(consultationId) {
-                try {
-                    this.consultationId = consultationId;
-                    this.callSeconds = 0;
-                    this.notesSaved = false;
-
-                    callUIManager.showCallWindow();
-                    callUIManager.updateStatus('Conectando com o paciente...', 'connecting');
-                    callUIManager.updateCompleteButton(false);
-
-                    await doctorWebRTCService.initializeCall(consultationId, currentDoctor.doctor_id);
-                    this.startTimer();
-
-                } catch (error) {
-                    console.error('Erro ao iniciar chamada:', error);
-                    callUIManager.updateStatus('Erro na conexão: ' + error.message, 'error');
-                }
-            },
-
-            startTimer() {
-                this.callTimer = setInterval(() => {
-                    this.callSeconds++;
-                    callUIManager.updateTimer(this.callSeconds);
-                    callUIManager.updateVisualizer();
-                }, 1000);
-            },
-
-            async endCall(reason = 'normal') {
-                try {
-                    if (this.callTimer) {
-                        clearInterval(this.callTimer);
-                        this.callTimer = null;
-                    }
-
-                    if (signalingService.roomId && reason !== 'hangup_received') {
-                        await signalingService.sendMessage('hangup', {});
-                    }
-
-                    doctorWebRTCService.cleanup();
-                    signalingService.cleanup();
-
-                    callUIManager.hideCallWindow();
-                    
-                    // Atualizar UI principal
-                    if (document.getElementById('consultations').classList.contains('active')) {
-                        loadConsultationsPage();
-                    }
-
-                    console.log(`Chamada terminada: ${reason}`);
-
-                } catch (error) {
-                    console.error('Erro ao terminar chamada:', error);
-                } finally {
-                    this.consultationId = null;
-                    this.callSeconds = 0;
-                    this.notesSaved = false;
-                }
-            },
-
-            canCompleteConsultation() {
-                return this.notesSaved && doctorWebRTCService.currentState === 'connected';
-            }
-        };
-
-        // Estado da aplicação
-        let currentDoctor = null;
-        let isAvailable = false;
-        let realtimeSubscription = null;
-
-        // Inicialização da aplicação
-        document.addEventListener('DOMContentLoaded', function() {
-            initApp();
-            setupEventListeners();
-            setupAudioEventListeners();
-            makeElementDraggable('audio-call-window', 'audio-call-header');
-        });
-
-        function initApp() {
-            const savedDoctor = localStorage.getItem('drgo_current_doctor');
-            if (savedDoctor) {
-                currentDoctor = JSON.parse(savedDoctor);
-                showApp();
-                loadDoctorData();
-                setupRealtimeSubscription();
-            }
-        }
-
-        // FUNÇÃO PARA ARRASTAR JANELA
-        function makeElementDraggable(elementId, handleId) {
-            const element = document.getElementById(elementId);
-            const handle = document.getElementById(handleId);
-            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-            
-            if (handle) {
-                handle.onmousedown = dragMouseDown;
-            }
-            
-            function dragMouseDown(e) {
-                e = e || window.event;
-                e.preventDefault();
-                pos3 = e.clientX;
-                pos4 = e.clientY;
-                document.onmouseup = closeDragElement;
-                document.onmousemove = elementDrag;
-            }
-            
-            function elementDrag(e) {
-                e = e || window.event;
-                e.preventDefault();
-                pos1 = pos3 - e.clientX;
-                pos2 = pos4 - e.clientY;
-                pos3 = e.clientX;
-                pos4 = e.clientY;
-                element.style.top = (element.offsetTop - pos2) + "px";
-                element.style.left = (element.offsetLeft - pos1) + "px";
-            }
-            
-            function closeDragElement() {
-                document.onmouseup = null;
-                document.onmousemove = null;
-            }
-        }
-
-        function setupEventListeners() {
-            // Navegação
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.addEventListener('click', function() {
-                    const pageId = this.getAttribute('data-page');
-                    showPage(pageId);
-                    
-                    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-                    this.classList.add('active');
-                });
-            });
-
-            // Autenticação
-            document.getElementById('login-btn').addEventListener('click', handleLogin);
-            document.getElementById('register-doctor-btn').addEventListener('click', function() {
-                document.getElementById('register-doctor-modal').classList.add('active');
-            });
-            document.getElementById('logout-btn').addEventListener('click', handleLogout);
-
-            // Disponibilidade
-            document.getElementById('availability-checkbox').addEventListener('change', toggleAvailability);
-
-            // Modal de registo
-            document.getElementById('close-record-modal').addEventListener('click', function() {
-                document.getElementById('consultation-record-modal').classList.remove('active');
-            });
-
-            // Notas do médico
-            document.getElementById('save-doctor-notes').addEventListener('click', saveDoctorNotes);
-
-            // Pesquisa
-            document.getElementById('search-consultations').addEventListener('input', function() {
-                loadConsultationHistory(this.value);
-            });
-
-            // Edição de perfil
-            document.getElementById('edit-profile-btn').addEventListener('click', function() {
-                document.getElementById('edit-name').value = currentDoctor.name;
-                document.getElementById('edit-specialty').value = currentDoctor.specialty || '';
-                document.getElementById('edit-profile-modal').classList.add('active');
-            });
-
-            document.getElementById('close-edit-profile-modal').addEventListener('click', function() {
-                document.getElementById('edit-profile-modal').classList.remove('active');
-            });
-
-            document.getElementById('save-profile-btn').addEventListener('click', saveProfile);
-
-            // Alteração de password
-            document.getElementById('change-password-btn').addEventListener('click', function() {
-                document.getElementById('change-password-modal').classList.add('active');
-            });
-
-            document.getElementById('close-password-modal').addEventListener('click', function() {
-                document.getElementById('change-password-modal').classList.remove('active');
-                document.getElementById('change-password-form').reset();
-            });
-
-            document.getElementById('save-password-btn').addEventListener('click', handleChangePassword);
-
-            // Registo de médico
-            document.getElementById('close-register-doctor-modal').addEventListener('click', function() {
-                document.getElementById('register-doctor-modal').classList.remove('active');
-            });
-
-            document.getElementById('submit-doctor-register').addEventListener('click', handleDoctorRegister);
-
-            // Modal de imagem ampliada
-            document.getElementById('close-image-modal').addEventListener('click', function() {
-                document.getElementById('image-modal').classList.remove('active');
-            });
-
-            document.getElementById('image-modal').addEventListener('click', function(e) {
-                if (e.target === this) {
-                    this.classList.remove('active');
-                }
-            });
-        }
-
-        function setupAudioEventListeners() {
-            document.getElementById('audio-btn-not-suitable-online').addEventListener('click', function() {
-                endCallWithReason('not_suitable_online');
-            });
-            document.getElementById('audio-btn-not-my-specialty').addEventListener('click', function() {
-                endCallWithReason('not_my_specialty');
-            });
-            document.getElementById('audio-btn-complete-consultation').addEventListener('click', completeConsultationFromAudioCall);
-            document.getElementById('toggle-audio-mic').addEventListener('click', toggleAudioMicrophone);
-        }
-
-        function toggleAudioMicrophone() {
-            if (doctorWebRTCService.localStream) {
-                const audioTracks = doctorWebRTCService.localStream.getAudioTracks();
-                audioTracks.forEach(track => {
-                    track.enabled = !track.enabled;
-                });
-                const isMicMuted = !audioTracks[0].enabled;
-                
-                const btn = document.getElementById('toggle-audio-mic');
-                btn.classList.toggle('active', isMicMuted);
-                btn.innerHTML = isMicMuted ? 
-                    '<i class="fas fa-microphone-slash"></i><span>Ativar Áudio</span>' :
-                    '<i class="fas fa-microphone"></i><span>Mudo</span>';
-            }
-        }
-
-        async function endCallWithReason(reason) {
-            try {
-                let endReason = '';
-                
-                switch(reason) {
-                    case 'not_suitable_online':
-                        endReason = 'Não adequado para atendimento online';
-                        await updateConsultationStatus('rejected');
-                        break;
-                    case 'not_my_specialty':
-                        endReason = 'Não adequado para minha especialização';
-                        await updateConsultationStatus('rejected');
-                        break;
-                }
-                
-                await callManager.endCall(reason);
-                
-            } catch (error) {
-                console.error('Erro ao terminar chamada:', error);
-                alert('Erro ao terminar chamada: ' + error.message);
-            }
-        }
-
-        async function completeConsultationFromAudioCall() {
-            if (!callManager.consultationId) return;
-            
-            if (!callManager.canCompleteConsultation()) {
-                alert('Por favor, guarde as notas médicas antes de concluir a consulta.');
-                return;
-            }
-            
-            try {
-                const { error } = await supabase
-                    .from('consultations')
-                    .update({ status: 'completed' })
-                    .eq('id', callManager.consultationId);
-                
-                if (error) throw error;
-                
-                const newTotalIncome = (currentDoctor.total_income || 0) + 15;
-                const newAvailableBalance = (currentDoctor.available_balance || 0) + 15;
-                const newConsultationsCount = (currentDoctor.consultations_count || 0) + 1;
-                
-                const { error: updateError } = await supabase
-                    .from('doctors')
-                    .update({ 
-                        total_income: newTotalIncome,
-                        available_balance: newAvailableBalance,
-                        consultations_count: newConsultationsCount
-                    })
-                    .eq('order_number', currentDoctor.order_number);
-                
-                if (updateError) throw updateError;
-                
-                currentDoctor.total_income = newTotalIncome;
-                currentDoctor.available_balance = newAvailableBalance;
-                currentDoctor.consultations_count = newConsultationsCount;
-                localStorage.setItem('drgo_current_doctor', JSON.stringify(currentDoctor));
-                
-                await callManager.endCall('completed');
-                
-                alert('Consulta concluída com sucesso!');
-                document.getElementById('consultation-record-modal').classList.remove('active');
-                
-                loadDoctorData();
-                loadConsultationsPage();
-                
-            } catch (error) {
-                alert('Erro ao concluir consulta: ' + error.message);
-            }
-        }
-
-        async function saveDoctorNotes() {
-            const observation = document.getElementById('observation-doctor').value;
-            const intervention = document.getElementById('intervention-doctor').value;
-            
-            if (!observation || !intervention) {
-                alert('Por favor, preencha a observação e a intervenção médica.');
-                return;
-            }
-            
-            if (!callManager.consultationId) {
-                alert('Erro: ID da consulta não encontrado.');
-                return;
-            }
-            
-            try {
-                const { error } = await supabase
-                    .from('consultations')
-                    .update({
-                        observation_doctor: observation,
-                        intervention_doctor: intervention
-                    })
-                    .eq('id', callManager.consultationId);
-                
-                if (error) throw error;
-                
-                callManager.notesSaved = true;
-                callUIManager.updateCompleteButton(callManager.canCompleteConsultation());
-                
-                alert('Notas médicas guardadas com sucesso!');
-                
-            } catch (error) {
-                alert('Erro ao guardar notas médicas: ' + error.message);
-            }
-        }
-
-        // Funções de autenticação
-        async function handleLogin() {
-            const orderNumber = document.getElementById('login-order').value;
-            const password = document.getElementById('login-password').value;
-            
-            if (!orderNumber || !password) {
-                showLoginError('Por favor, preencha todos os campos.');
-                return;
-            }
-            
-            try {
-                const { data, error } = await supabase
-                    .from('doctors')
-                    .select('*')
-                    .eq('order_number', orderNumber)
-                    .eq('password', password)
-                    .single();
-                
-                if (error || !data) {
-                    showLoginError('Número de ordem ou password incorretos.');
-                    return;
-                }
-                
-                currentDoctor = data;
-                localStorage.setItem('drgo_current_doctor', JSON.stringify(data));
-                showApp();
-                loadDoctorData();
-                setupRealtimeSubscription();
-                
-            } catch (error) {
-                showLoginError('Erro no login: ' + error.message);
-            }
-        }
-
-        async function handleDoctorRegister() {
-            const orderNumber = document.getElementById('reg-doctor-order').value;
-            const name = document.getElementById('reg-doctor-name').value;
-            const specialty = document.getElementById('reg-doctor-specialty').value;
-            const password = document.getElementById('reg-doctor-password').value;
-            const confirmPassword = document.getElementById('reg-doctor-confirm-password').value;
-            
-            if (!orderNumber || !name || !specialty || !password || !confirmPassword) {
-                alert('Por favor, preencha todos os campos.');
-                return;
-            }
-            
-            if (password !== confirmPassword) {
-                alert('As passwords não coincidem.');
-                return;
-            }
-            
-            try {
-                const { data: existingDoctor, error: checkError } = await supabase
-                    .from('doctors')
-                    .select('*')
-                    .eq('order_number', orderNumber)
-                    .single();
-                
-                if (existingDoctor) {
-                    alert('Já existe um médico com este número de ordem.');
-                    return;
-                }
-                
-                const doctorId = 'DR' + orderNumber + Math.floor(Math.random() * 1000);
-                
-                const { data, error } = await supabase
-                    .from('doctors')
-                    .insert([{
-                        doctor_id: doctorId,
-                        order_number: orderNumber,
-                        name: name,
-                        specialty: specialty,
-                        password: password,
-                        is_available: false,
-                        available_balance: 0,
-                        total_income: 0,
-                        consultations_count: 0
-                    }])
-                    .select()
-                    .single();
-                
-                if (error) throw error;
-                
-                alert('Registo realizado com sucesso! Pode agora fazer login.');
-                document.getElementById('register-doctor-modal').classList.remove('active');
-                document.getElementById('register-doctor-form').reset();
-                
-            } catch (error) {
-                alert('Erro no registo: ' + error.message);
-            }
-        }
-
-        function showLoginError(message) {
-            document.getElementById('error-message').textContent = message;
-            document.getElementById('login-error').classList.remove('hidden');
-        }
-
-        function handleLogout() {
-            if (confirm('Tem a certeza que deseja terminar a sessão?')) {
-                currentDoctor = null;
-                localStorage.removeItem('drgo_current_doctor');
-                
-                if (realtimeSubscription) {
-                    supabase.removeChannel(realtimeSubscription);
-                }
-                
-                callManager.endCall('logout');
-                showAuthPage();
-            }
-        }
-
-        function showAuthPage() {
-            document.getElementById('nav-menu').classList.add('hidden');
-            document.getElementById('auth-page').classList.add('active');
-            document.querySelectorAll('.page:not(#auth-page)').forEach(page => {
-                page.classList.remove('active');
-            });
-            document.getElementById('login-form').reset();
-            document.getElementById('login-error').classList.add('hidden');
-        }
-
-        function showApp() {
-            document.getElementById('auth-page').classList.remove('active');
-            document.getElementById('nav-menu').classList.remove('hidden');
-            document.getElementById('consultations').classList.add('active');
-        }
-
-        function showPage(pageId) {
-            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
-            document.getElementById(pageId).classList.add('active');
-            
-            if (pageId === 'consultations') {
-                loadConsultationsPage();
-            } else if (pageId === 'my-data') {
-                loadMyDataPage();
-            }
-        }
-
-        function loadDoctorData() {
-            if (!currentDoctor) return;
-            
-            document.getElementById('available-balance').textContent = (currentDoctor.available_balance || 0) + '€';
-            document.getElementById('total-consultations').textContent = (currentDoctor.consultations_count || 0) + ' consultas concluídas';
-            
-            isAvailable = currentDoctor.is_available || false;
-            updateAvailabilityUI();
-        }
-
-        function loadMyDataPage() {
-            if (!currentDoctor) return;
-            
-            document.getElementById('profile-order').textContent = currentDoctor.order_number;
-            document.getElementById('profile-name').textContent = currentDoctor.name;
-            document.getElementById('profile-specialty').textContent = currentDoctor.specialty || 'Não definida';
-            document.getElementById('profile-consultations').textContent = currentDoctor.consultations_count || 0;
-            document.getElementById('profile-income').textContent = (currentDoctor.total_income || 0) + '€';
-            
-            loadEarningsBreakdown();
-        }
-
-        async function saveProfile() {
-            const name = document.getElementById('edit-name').value;
-            const specialty = document.getElementById('edit-specialty').value;
-            
-            if (!name || !specialty) {
-                alert('Por favor, preencha todos os campos.');
-                return;
-            }
-            
-            try {
-                const { data, error } = await supabase
-                    .from('doctors')
-                    .update({ 
-                        name: name,
-                        specialty: specialty
-                    })
-                    .eq('order_number', currentDoctor.order_number)
-                    .select()
-                    .single();
-                
-                if (error) throw error;
-                
-                currentDoctor = data;
-                localStorage.setItem('drgo_current_doctor', JSON.stringify(data));
-                
-                document.getElementById('edit-profile-modal').classList.remove('active');
-                loadMyDataPage();
-                alert('Perfil atualizado com sucesso!');
-                
-            } catch (error) {
-                alert('Erro ao atualizar perfil: ' + error.message);
-            }
-        }
-
-        async function handleChangePassword() {
-            const currentPassword = document.getElementById('current-password').value;
-            const newPassword = document.getElementById('new-password').value;
-            const confirmPassword = document.getElementById('confirm-password').value;
-            
-            if (!currentPassword || !newPassword || !confirmPassword) {
-                alert('Por favor, preencha todos os campos.');
-                return;
-            }
-            
-            if (currentPassword !== currentDoctor.password) {
-                alert('Password atual incorreta.');
-                return;
-            }
-            
-            if (newPassword !== confirmPassword) {
-                alert('As novas passwords não coincidem.');
-                return;
-            }
-            
-            try {
-                const { data, error } = await supabase
-                    .from('doctors')
-                    .update({ password: newPassword })
-                    .eq('order_number', currentDoctor.order_number)
-                    .select()
-                    .single();
-                
-                if (error) throw error;
-                
-                currentDoctor = data;
-                localStorage.setItem('drgo_current_doctor', JSON.stringify(data));
-                
-                document.getElementById('change-password-modal').classList.remove('active');
-                document.getElementById('change-password-form').reset();
-                alert('Password alterada com sucesso!');
-                
-            } catch (error) {
-                alert('Erro ao alterar password: ' + error.message);
-            }
-        }
-
-        async function toggleAvailability() {
-            isAvailable = document.getElementById('availability-checkbox').checked;
-            
-            try {
-                const { error } = await supabase
-                    .from('doctors')
-                    .update({ is_available: isAvailable })
-                    .eq('order_number', currentDoctor.order_number);
-                
-                if (error) throw error;
-                
-                currentDoctor.is_available = isAvailable;
-                localStorage.setItem('drgo_current_doctor', JSON.stringify(currentDoctor));
-                
-                updateAvailabilityUI();
-                
-                if (isAvailable) {
-                    console.log('Médico disponível - carregando consultas em espera');
-                    await loadWaitingConsultations();
-                } else {
-                    console.log('Médico indisponível - limpando lista de espera');
-                    document.getElementById('waiting-consultations').innerHTML = 
-                        '<p>Nenhuma consulta em espera. Quando estiver disponível, novas consultas aparecerão aqui.</p>';
-                }
-                
-            } catch (error) {
-                console.error('Erro ao atualizar disponibilidade:', error);
-                alert('Erro ao atualizar disponibilidade: ' + error.message);
-                document.getElementById('availability-checkbox').checked = !isAvailable;
-                isAvailable = !isAvailable;
-            }
-        }
-
-        function updateAvailabilityUI() {
-            document.getElementById('availability-checkbox').checked = isAvailable;
-        }
-
-        function setupRealtimeSubscription() {
-            if (realtimeSubscription) {
-                supabase.removeChannel(realtimeSubscription);
+};
+
+const signalingService = {
+    roomId: null,
+    channel: null,
+
+    async setupSignaling(consultationId, doctorId) {
+        try {
+            // ✅ CORREÇÃO: Buscar room existente (criada pelo farmacêutico)
+            const { data: room, error: roomError } = await supabase
+                .from('signaling_rooms')
+                .select('*')
+                .eq('consultation_id', consultationId)
+                .single();
+
+            if (roomError || !room) {
+                console.error('Room não encontrada para a consulta:', consultationId);
+                throw new Error('Sala de sinalização não encontrada');
             }
 
-            realtimeSubscription = supabase
-                .channel('consultations-all-changes')
+            // ✅ CORREÇÃO: Atualizar room com doctor_id
+            const { error: updateError } = await supabase
+                .from('signaling_rooms')
+                .update({ 
+                    doctor_id: doctorId,
+                    status: 'active',
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', room.id);
+
+            if (updateError) throw updateError;
+
+            this.roomId = room.id;
+
+            // Verificar offers existentes
+            await this.checkExistingOffers();
+
+            this.channel = supabase
+                .channel(`signaling-room-${room.id}`)
                 .on(
                     'postgres_changes',
                     {
                         event: 'INSERT',
-                        schema: 'public', 
-                        table: 'consultations'
-                    },
-                    (payload) => {
-                        console.log('Nova consulta inserida:', payload);
-                        if (isAvailable && payload.new.status === 'searching') {
-                            console.log('Carregando consultas em espera - Nova inserção');
-                            loadWaitingConsultations();
-                        }
-                    }
-                )
-                .on(
-                    'postgres_changes',
-                    {
-                        event: 'UPDATE',
                         schema: 'public',
-                        table: 'consultations'
+                        table: 'signaling_messages',
+                        filter: `room_id=eq.${room.id}`
                     },
                     (payload) => {
-                        console.log('Consulta atualizada:', payload.new.status);
-                        
-                        if (payload.old.status === 'searching' && payload.new.status !== 'searching') {
-                            console.log('Consulta removida da lista de espera');
-                            loadWaitingConsultations();
-                        }
-                        
-                        if (payload.old.status !== 'searching' && payload.new.status === 'searching') {
-                            console.log('Consulta voltou para espera');
-                            loadWaitingConsultations();
-                        }
-                        
-                        loadConsultationHistory();
+                        console.log('📨 Mensagem signaling recebida:', payload.new.message_type);
+                        this.handleIncomingMessage(payload.new);
                     }
                 )
                 .subscribe((status) => {
-                    console.log('Status da subscrição:', status);
                     if (status === 'SUBSCRIBED') {
-                        console.log('Ouvindo mudanças em consultas em tempo real');
-                        if (isAvailable) {
-                            loadWaitingConsultations();
-                        }
+                        callUIManager.updateConnectionState('waiting-for-offer');
                     }
                 });
-        }
 
-        async function loadWaitingConsultations() {
-            if (!currentDoctor || !isAvailable) {
-                console.log('Médico não disponível, não carregando consultas');
+        } catch (error) {
+            console.error('Erro ao configurar sinalização:', error);
+            throw error;
+        }
+    },
+
+    async checkExistingOffers() {
+        try {
+            const { data: existingOffers, error } = await supabase
+                .from('signaling_messages')
+                .select('*')
+                .eq('room_id', this.roomId)
+                .eq('message_type', 'offer')
+                .order('created_at', { ascending: false })
+                .limit(1);
+
+            if (error) return false;
+
+            if (existingOffers && existingOffers.length > 0) {
+                const latestOffer = existingOffers[0];
+                await doctorWebRTCService.handleOffer(JSON.parse(latestOffer.sdp));
+                return true;
+            }
+            
+            return false;
+        } catch (error) {
+            console.error('Erro ao verificar offers:', error);
+            return false;
+        }
+    },
+
+    async handleIncomingMessage(message) {
+        try {
+            console.log(`📨 Mensagem: ${message.message_type}, Estado: ${doctorWebRTCService.currentState}`);
+            
+            switch (message.message_type) {
+                case 'offer':
+                    if (doctorWebRTCService.currentState === 'waiting-for-offer') {
+                        await doctorWebRTCService.handleOffer(JSON.parse(message.sdp));
+                    }
+                    break;
+                case 'candidate':
+                    await doctorWebRTCService.handleCandidate(JSON.parse(message.candidate));
+                    break;
+                case 'hangup':
+                    console.log('📞 Hangup recebido do farmacêutico');
+                    callManager.endCall('hangup_received');
+                    break;
+            }
+        } catch (error) {
+            console.error('Erro ao processar mensagem:', error);
+        }
+    },
+
+    async sendMessage(messageType, data) {
+        try {
+            if (!callManager.consultationId) return;
+            
+            // ✅ CORREÇÃO: Buscar pharmacist_id da consulta
+            const { data: consultation, error: consultError } = await supabase
+                .from('consultations')
+                .select('pharmacist_id')
+                .eq('id', callManager.consultationId)
+                .single();
+                
+            if (consultError || !consultation) {
+                console.error('❌ Não foi possível obter pharmacist_id');
                 return;
             }
-            
-            try {
-                console.log('Buscando consultas em espera...');
-                const { data: consultations, error } = await supabase
-                    .from('consultations')
-                    .select('*')
-                    .eq('status', 'searching')
-                    .order('created_at', { ascending: true });
-                
-                if (error) {
-                    console.error('Erro ao buscar consultas:', error);
-                    throw error;
-                }
-                
-                const container = document.getElementById('waiting-consultations');
-                container.innerHTML = '';
-                
-                console.log('Consultas encontradas:', consultations?.length || 0);
-                
-                if (consultations && consultations.length > 0) {
-                    let consultasExibidas = 0;
-                    
-                    consultations.forEach(consultation => {
-                        const bar = createConsultationBar(consultation);
-                        container.appendChild(bar);
-                        consultasExibidas++;
-                    });
-                    
-                    console.log(`Consultas exibidas: ${consultasExibidas}`);
-                    
-                    if (consultasExibidas === 0) {
-                        container.innerHTML = '<p>Nenhuma consulta em espera disponível.</p>';
-                    }
-                } else {
-                    container.innerHTML = '<p>Nenhuma consulta em espera. Quando estiver disponível, novas consultas aparecerão aqui.</p>';
-                }
-                
-            } catch (error) {
-                console.error('Erro ao carregar consultas em espera:', error);
-                const container = document.getElementById('waiting-consultations');
-                container.innerHTML = '<p class="alert alert-error">Erro ao carregar consultas em espera.</p>';
-            }
-        }
 
-        async function acceptConsultation(consultationId) {
-            if (!currentDoctor) return;
-            
-            try {
-                console.log(`Aceitando consulta: ${consultationId}`);
-                
-                const { error } = await supabase
-                    .from('consultations')
-                    .update({ 
-                        status: 'in-call',
-                        doctor: currentDoctor.name,
-                        doctor_id: currentDoctor.doctor_id
-                    })
-                    .eq('id', consultationId);
-                
-                if (error) throw error;
-                
-                console.log('Consulta aceita - iniciando chamada de áudio');
-                await callManager.startCall(consultationId);
-                
-                const { data: consultation, error: fetchError } = await supabase
-                    .from('consultations')
-                    .select('*')
-                    .eq('id', consultationId)
-                    .single();
-                
-                if (fetchError) throw fetchError;
-                
-                if (consultation) {
-                    viewConsultationRecord(consultation);
-                }
-                
-            } catch (error) {
-                console.error('Erro ao aceitar consulta:', error);
-                alert('Erro ao aceitar consulta: ' + error.message);
-            }
-        }
+            const messageData = {
+                room_id: this.roomId,
+                from_user: currentDoctor.doctor_id,
+                to_user: consultation.pharmacist_id,
+                message_type: messageType
+            };
 
-        async function updateConsultationStatus(consultationId, status) {
-            try {
-                const { error } = await supabase
-                    .from('consultations')
-                    .update({ status: status })
-                    .eq('id', consultationId);
-                
-                if (error) throw error;
-            } catch (error) {
-                console.error('Erro ao atualizar status da consulta:', error);
+            if (messageType === 'offer' || messageType === 'answer') {
+                messageData.sdp = JSON.stringify(data);
+            } else if (messageType === 'candidate') {
+                messageData.candidate = JSON.stringify(data);
             }
-        }
 
-        async function loadConsultationsPage() {
-            if (!currentDoctor) return;
+            const { error } = await supabase
+                .from('signaling_messages')
+                .insert([messageData]);
+
+            if (error) throw error;
             
+            console.log(`✅ ${messageType} enviado para farmacêutico`);
+            
+        } catch (error) {
+            console.error('Erro ao enviar mensagem:', error);
+        }
+    },
+
+    cleanup() {
+        if (this.channel) {
+            supabase.removeChannel(this.channel);
+            this.channel = null;
+        }
+        this.roomId = null;
+    }
+};
+
+const callUIManager = {
+    updateConnectionState(state) {
+        const statusElement = document.getElementById('audio-call-status');
+        const states = {
+            'waiting-for-offer': '🟡 Aguardando conexão do farmacêutico...',
+            'answer-sent': '🟡 Conectando...',
+            'connected': '🟢 Conectado com farmacêutico',
+            'error': '🔴 Erro de conexão'
+        };
+        
+        statusElement.textContent = states[state] || state;
+        statusElement.className = `call-status-indicator status-${state === 'connected' ? 'connected' : 'connecting'}`;
+    },
+
+    updateTimer(seconds) {
+        const minutes = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        document.getElementById('audio-call-duration').textContent = 
+            `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    },
+
+    updateCompleteButton(noteState) {
+        const btn = document.getElementById('audio-btn-complete-consultation');
+        
+        if (noteState.isSaved) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check-circle"></i> Concluir Consulta';
+            btn.style.background = '#4caf50';
+        } else if (noteState.hasContent) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Guarde as notas primeiro';
+            btn.style.background = '#ff9800';
+        } else {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-edit"></i> Preencha as observações';
+            btn.style.background = '#6c757d';
+        }
+    },
+
+    showCallWindow() {
+        document.getElementById('audio-call-window').style.display = 'block';
+    },
+
+    hideCallWindow() {
+        document.getElementById('audio-call-window').style.display = 'none';
+    }
+};
+
+const callManager = {
+    consultationId: null,
+    callTimer: null,
+    callSeconds: 0,
+    
+    noteState: {
+        hasContent: false,
+        isSaved: false
+    },
+
+    async startCall(consultationId) {
+        try {
+            this.consultationId = consultationId;
+            this.callSeconds = 0;
+            
+            this.noteState = { hasContent: false, isSaved: false };
+            callUIManager.updateCompleteButton(this.noteState);
+
+            callUIManager.showCallWindow();
+            callUIManager.updateConnectionState('connecting');
+
+            await doctorWebRTCService.initializeCall(consultationId, currentDoctor.doctor_id);
+            this.startTimer();
+
+        } catch (error) {
+            console.error('Erro ao iniciar chamada:', error);
+            callUIManager.updateConnectionState('error');
+        }
+    },
+
+    startTimer() {
+        this.callTimer = setInterval(() => {
+            this.callSeconds++;
+            callUIManager.updateTimer(this.callSeconds);
+        }, 1000);
+    },
+
+    async endCall(reason = 'normal') {
+        try {
+            if (this.callTimer) {
+                clearInterval(this.callTimer);
+                this.callTimer = null;
+            }
+
+            // ✅ CORREÇÃO: Enviar hangup antes de limpar recursos
+            if (signalingService.roomId && reason !== 'hangup_received') {
+                await signalingService.sendMessage('hangup', {});
+                console.log('📤 Hangup enviado para farmacêutico');
+            }
+
+            doctorWebRTCService.cleanup();
+            signalingService.cleanup();
+
+            callUIManager.hideCallWindow();
+            
+            if (document.getElementById('consultations').classList.contains('active')) {
+                loadConsultationsPage();
+            }
+
+            console.log(`📞 Chamada terminada: ${reason}`);
+
+        } catch (error) {
+            console.error('Erro ao terminar chamada:', error);
+        } finally {
+            this.consultationId = null;
+            this.callSeconds = 0;
+            this.noteState = { hasContent: false, isSaved: false };
+        }
+    },
+
+    canCompleteConsultation() {
+        return this.noteState.isSaved;
+    },
+
+    checkNotesContent() {
+        const observation = document.getElementById('observation-doctor')?.value || '';
+        const intervention = document.getElementById('intervention-doctor')?.value || '';
+        
+        const hasContent = observation.trim().length > 0 && intervention.trim().length > 0;
+        
+        if (this.noteState.hasContent !== hasContent) {
+            this.noteState.hasContent = hasContent;
+            callUIManager.updateCompleteButton(this.noteState);
+        }
+    }
+};
+
+// Estado da aplicação
+let currentDoctor = null;
+let isAvailable = false;
+let realtimeSubscription = null;
+
+// Inicialização da aplicação
+document.addEventListener('DOMContentLoaded', function() {
+    initApp();
+    setupEventListeners();
+    setupAudioEventListeners();
+    makeElementDraggable('audio-call-window', 'audio-call-header');
+});
+
+function initApp() {
+    const savedDoctor = localStorage.getItem('drgo_current_doctor');
+    if (savedDoctor) {
+        currentDoctor = JSON.parse(savedDoctor);
+        showApp();
+        loadDoctorData();
+        setupRealtimeSubscription();
+    }
+}
+
+function makeElementDraggable(elementId, handleId) {
+    const element = document.getElementById(elementId);
+    const handle = document.getElementById(handleId);
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    
+    if (handle) {
+        handle.onmousedown = dragMouseDown;
+    }
+    
+    function dragMouseDown(e) {
+        e = e || window.event;
+        e.preventDefault();
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        document.onmouseup = closeDragElement;
+        document.onmousemove = elementDrag;
+    }
+    
+    function elementDrag(e) {
+        e = e || window.event;
+        e.preventDefault();
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        element.style.top = (element.offsetTop - pos2) + "px";
+        element.style.left = (element.offsetLeft - pos1) + "px";
+    }
+    
+    function closeDragElement() {
+        document.onmouseup = null;
+        document.onmousemove = null;
+    }
+}
+
+function setupEventListeners() {
+    // Navegação
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const pageId = this.getAttribute('data-page');
+            showPage(pageId);
+            
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
+
+    // Autenticação
+    document.getElementById('login-btn').addEventListener('click', handleLogin);
+    document.getElementById('register-doctor-btn').addEventListener('click', function() {
+        document.getElementById('register-doctor-modal').classList.add('active');
+    });
+    document.getElementById('logout-btn').addEventListener('click', handleLogout);
+
+    // Disponibilidade
+    document.getElementById('availability-checkbox').addEventListener('change', toggleAvailability);
+
+    // Modal de registo
+    document.getElementById('close-record-modal').addEventListener('click', function() {
+        document.getElementById('consultation-record-modal').classList.remove('active');
+    });
+
+    // Notas do médico
+    document.getElementById('save-doctor-notes').addEventListener('click', saveDoctorNotes);
+
+    // Pesquisa
+    document.getElementById('search-consultations').addEventListener('input', function() {
+        loadConsultationHistory(this.value);
+    });
+
+    // Edição de perfil
+    document.getElementById('edit-profile-btn').addEventListener('click', function() {
+        document.getElementById('edit-name').value = currentDoctor.name;
+        document.getElementById('edit-specialty').value = currentDoctor.specialty || '';
+        document.getElementById('edit-profile-modal').classList.add('active');
+    });
+
+    document.getElementById('close-edit-profile-modal').addEventListener('click', function() {
+        document.getElementById('edit-profile-modal').classList.remove('active');
+    });
+
+    document.getElementById('save-profile-btn').addEventListener('click', saveProfile);
+
+    // Alteração de password
+    document.getElementById('change-password-btn').addEventListener('click', function() {
+        document.getElementById('change-password-modal').classList.add('active');
+    });
+
+    document.getElementById('close-password-modal').addEventListener('click', function() {
+        document.getElementById('change-password-modal').classList.remove('active');
+        document.getElementById('change-password-form').reset();
+    });
+
+    document.getElementById('save-password-btn').addEventListener('click', handleChangePassword);
+
+    // Registo de médico
+    document.getElementById('close-register-doctor-modal').addEventListener('click', function() {
+        document.getElementById('register-doctor-modal').classList.remove('active');
+    });
+
+    document.getElementById('submit-doctor-register').addEventListener('click', handleDoctorRegister);
+
+    // Modal de imagem ampliada
+    document.getElementById('close-image-modal').addEventListener('click', function() {
+        document.getElementById('image-modal').classList.remove('active');
+    });
+
+    document.getElementById('image-modal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.remove('active');
+        }
+    });
+}
+
+function setupAudioEventListeners() {
+    document.getElementById('audio-btn-not-suitable-online').addEventListener('click', function() {
+        endCallWithReason('not_suitable_online');
+    });
+    document.getElementById('audio-btn-not-my-specialty').addEventListener('click', function() {
+        endCallWithReason('not_my_specialty');
+    });
+    document.getElementById('audio-btn-complete-consultation').addEventListener('click', completeConsultationFromAudioCall);
+    document.getElementById('toggle-audio-mic').addEventListener('click', toggleAudioMicrophone);
+}
+
+function toggleAudioMicrophone() {
+    if (doctorWebRTCService.localStream) {
+        const audioTracks = doctorWebRTCService.localStream.getAudioTracks();
+        audioTracks.forEach(track => {
+            track.enabled = !track.enabled;
+        });
+        const isMicMuted = !audioTracks[0].enabled;
+        
+        const btn = document.getElementById('toggle-audio-mic');
+        btn.classList.toggle('active', isMicMuted);
+        btn.innerHTML = isMicMuted ? 
+            '<i class="fas fa-microphone-slash"></i><span>Ativar Áudio</span>' :
+            '<i class="fas fa-microphone"></i><span>Mudo</span>';
+    }
+}
+
+async function endCallWithReason(reason) {
+    try {
+        let endReason = '';
+        
+        switch(reason) {
+            case 'not_suitable_online':
+                endReason = 'Não adequado para atendimento online';
+                await updateConsultationStatus('rejected');
+                break;
+            case 'not_my_specialty':
+                endReason = 'Não adequado para minha especialização';
+                await updateConsultationStatus('rejected');
+                break;
+        }
+        
+        await callManager.endCall(reason);
+        
+    } catch (error) {
+        console.error('Erro ao terminar chamada:', error);
+        alert('Erro ao terminar chamada: ' + error.message);
+    }
+}
+
+// ✅ CORREÇÃO CRÍTICA: doctor_stats REMOVIDO, usar apenas doctors
+async function completeConsultationFromAudioCall() {
+    if (!callManager.consultationId) return;
+    
+    if (!callManager.canCompleteConsultation()) {
+        alert('Por favor, guarde as notas médicas antes de concluir a consulta.');
+        return;
+    }
+    
+    try {
+        // 1. Atualizar status da consulta para 'completed'
+        const { error: consultationError } = await supabase
+            .from('consultations')
+            .update({ status: 'completed' })
+            .eq('id', callManager.consultationId);
+        
+        if (consultationError) throw consultationError;
+        
+        // 2. Calcular novos valores
+        const newTotalIncome = (currentDoctor.total_income || 0) + 15;
+        const newAvailableBalance = (currentDoctor.available_balance || 0) + 15;
+        const newConsultationsCount = (currentDoctor.consultations_count || 0) + 1;
+        
+        // 3. ✅ CORREÇÃO: Atualizar APENAS tabela doctors (doctor_stats REMOVIDO)
+        const { error: doctorError } = await supabase
+            .from('doctors')
+            .update({ 
+                total_income: newTotalIncome,
+                available_balance: newAvailableBalance,
+                consultations_count: newConsultationsCount,
+                updated_at: new Date().toISOString()
+            })
+            .eq('order_number', currentDoctor.order_number);
+        
+        if (doctorError) throw doctorError;
+        
+        // 4. Atualizar estado local
+        currentDoctor.total_income = newTotalIncome;
+        currentDoctor.available_balance = newAvailableBalance;
+        currentDoctor.consultations_count = newConsultationsCount;
+        localStorage.setItem('drgo_current_doctor', JSON.stringify(currentDoctor));
+        
+        // 5. Finalizar chamada
+        await callManager.endCall('completed');
+        
+        alert('Consulta concluída com sucesso!');
+        document.getElementById('consultation-record-modal').classList.remove('active');
+        
+        // 6. Atualizar UI
+        loadDoctorData();
+        loadConsultationsPage();
+        
+    } catch (error) {
+        console.error('Erro ao concluir consulta:', error);
+        alert('Erro ao concluir consulta: ' + error.message);
+    }
+}
+
+async function saveDoctorNotes() {
+    const observation = document.getElementById('observation-doctor').value;
+    const intervention = document.getElementById('intervention-doctor').value;
+    
+    if (!observation || !intervention) {
+        alert('Por favor, preencha a observação e a intervenção médica.');
+        return;
+    }
+    
+    if (!callManager.consultationId) {
+        alert('Erro: ID da consulta não encontrado.');
+        return;
+    }
+    
+    try {
+        const { error } = await supabase
+            .from('consultations')
+            .update({
+                observation_doctor: observation,
+                intervention_doctor: intervention
+            })
+            .eq('id', callManager.consultationId);
+        
+        if (error) throw error;
+        
+        callManager.noteState.isSaved = true;
+        callManager.noteState.hasContent = true;
+        callUIManager.updateCompleteButton(callManager.noteState);
+        
+        alert('Notas médicas guardadas com sucesso!');
+        
+    } catch (error) {
+        alert('Erro ao guardar notas médicas: ' + error.message);
+    }
+}
+
+// ✅ CORREÇÃO: Aceitação de consulta com signaling_room existente
+async function acceptConsultation(consultationId) {
+    try {
+        console.log(`Aceitando consulta: ${consultationId}`);
+        
+        // 1. Atualizar status para in-call
+        const { error } = await supabase
+            .from('consultations')
+            .update({ 
+                status: 'in-call',
+                doctor: currentDoctor.name,
+                doctor_id: currentDoctor.doctor_id
+            })
+            .eq('id', consultationId);
+        
+        if (error) throw error;
+        
+        console.log('Consulta aceita - ABRINDO REGISTO AUTOMATICAMENTE...');
+        
+        // Buscar dados e abrir registo
+        const { data: consultation, error: fetchError } = await supabase
+            .from('consultations')
+            .select('*')
+            .eq('id', consultationId)
+            .single();
+        
+        if (fetchError) throw fetchError;
+        
+        if (consultation) {
+            viewConsultationRecord(consultation);
+        }
+        
+        // Aguardar 2 segundos para farmacêutico conectar
+        setTimeout(async () => {
+            await callManager.startCall(consultationId);
+        }, 2000);
+        
+    } catch (error) {
+        console.error('Erro ao aceitar consulta:', error);
+        alert('Erro ao aceitar consulta: ' + error.message);
+    }
+}
+
+// ✅ CORREÇÃO: handleDoctorRegister atualizado sem doctor_stats
+async function handleDoctorRegister() {
+    const orderNumber = document.getElementById('reg-doctor-order').value;
+    const name = document.getElementById('reg-doctor-name').value;
+    const specialty = document.getElementById('reg-doctor-specialty').value;
+    const password = document.getElementById('reg-doctor-password').value;
+    const confirmPassword = document.getElementById('reg-doctor-confirm-password').value;
+    
+    if (!orderNumber || !name || !specialty || !password || !confirmPassword) {
+        alert('Por favor, preencha todos os campos.');
+        return;
+    }
+    
+    if (password !== confirmPassword) {
+        alert('As passwords não coincidem.');
+        return;
+    }
+    
+    try {
+        const { data: existingDoctor, error: checkError } = await supabase
+            .from('doctors')
+            .select('*')
+            .eq('order_number', orderNumber)
+            .single();
+        
+        if (existingDoctor) {
+            alert('Já existe um médico com este número de ordem.');
+            return;
+        }
+        
+        const doctorId = 'DR' + orderNumber + Math.floor(Math.random() * 1000);
+        
+        // ✅ CORREÇÃO: Inserir apenas na tabela doctors
+        const { data, error } = await supabase
+            .from('doctors')
+            .insert([{
+                doctor_id: doctorId,
+                order_number: orderNumber,
+                name: name,
+                specialty: specialty,
+                password: password,
+                is_available: false,
+                available_balance: 0,
+                total_income: 0,
+                consultations_count: 0
+            }])
+            .select()
+            .single();
+        
+        if (error) throw error;
+        
+        alert('Registo realizado com sucesso! Pode agora fazer login.');
+        document.getElementById('register-doctor-modal').classList.remove('active');
+        document.getElementById('register-doctor-form').reset();
+        
+    } catch (error) {
+        alert('Erro no registo: ' + error.message);
+    }
+}
+
+// ✅ CORREÇÃO: saveProfile atualizado sem doctor_stats
+async function saveProfile() {
+    const name = document.getElementById('edit-name').value;
+    const specialty = document.getElementById('edit-specialty').value;
+    
+    if (!name || !specialty) {
+        alert('Por favor, preencha todos os campos.');
+        return;
+    }
+    
+    try {
+        // ✅ CORREÇÃO: Atualizar apenas tabela doctors
+        const { data, error } = await supabase
+            .from('doctors')
+            .update({ 
+                name: name,
+                specialty: specialty
+            })
+            .eq('order_number', currentDoctor.order_number)
+            .select()
+            .single();
+        
+        if (error) throw error;
+        
+        currentDoctor = data;
+        localStorage.setItem('drgo_current_doctor', JSON.stringify(data));
+        
+        document.getElementById('edit-profile-modal').classList.remove('active');
+        loadMyDataPage();
+        alert('Perfil atualizado com sucesso!');
+        
+    } catch (error) {
+        alert('Erro ao atualizar perfil: ' + error.message);
+    }
+}
+
+// Funções de autenticação (mantidas)
+async function handleLogin() {
+    const orderNumber = document.getElementById('login-order').value;
+    const password = document.getElementById('login-password').value;
+    
+    if (!orderNumber || !password) {
+        showLoginError('Por favor, preencha todos os campos.');
+        return;
+    }
+    
+    try {
+        const { data, error } = await supabase
+            .from('doctors')
+            .select('*')
+            .eq('order_number', orderNumber)
+            .eq('password', password)
+            .single();
+        
+        if (error || !data) {
+            showLoginError('Número de ordem ou password incorretos.');
+            return;
+        }
+        
+        currentDoctor = data;
+        localStorage.setItem('drgo_current_doctor', JSON.stringify(data));
+        showApp();
+        loadDoctorData();
+        setupRealtimeSubscription();
+        
+    } catch (error) {
+        showLoginError('Erro no login: ' + error.message);
+    }
+}
+
+function showLoginError(message) {
+    document.getElementById('error-message').textContent = message;
+    document.getElementById('login-error').classList.remove('hidden');
+}
+
+function handleLogout() {
+    if (confirm('Tem a certeza que deseja terminar a sessão?')) {
+        currentDoctor = null;
+        localStorage.removeItem('drgo_current_doctor');
+        
+        if (realtimeSubscription) {
+            supabase.removeChannel(realtimeSubscription);
+        }
+        
+        callManager.endCall('logout');
+        showAuthPage();
+    }
+}
+
+function showAuthPage() {
+    document.getElementById('nav-menu').classList.add('hidden');
+    document.getElementById('auth-page').classList.add('active');
+    document.querySelectorAll('.page:not(#auth-page)').forEach(page => {
+        page.classList.remove('active');
+    });
+    document.getElementById('login-form').reset();
+    document.getElementById('login-error').classList.add('hidden');
+}
+
+function showApp() {
+    document.getElementById('auth-page').classList.remove('active');
+    document.getElementById('nav-menu').classList.remove('hidden');
+    document.getElementById('consultations').classList.add('active');
+}
+
+function showPage(pageId) {
+    document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+    document.getElementById(pageId).classList.add('active');
+    
+    if (pageId === 'consultations') {
+        loadConsultationsPage();
+    } else if (pageId === 'my-data') {
+        loadMyDataPage();
+    }
+}
+
+function loadDoctorData() {
+    if (!currentDoctor) return;
+    
+    document.getElementById('available-balance').textContent = (currentDoctor.available_balance || 0) + '€';
+    document.getElementById('total-consultations').textContent = (currentDoctor.consultations_count || 0) + ' consultas concluídas';
+    
+    isAvailable = currentDoctor.is_available || false;
+    updateAvailabilityUI();
+}
+
+function loadMyDataPage() {
+    if (!currentDoctor) return;
+    
+    document.getElementById('profile-order').textContent = currentDoctor.order_number;
+    document.getElementById('profile-name').textContent = currentDoctor.name;
+    document.getElementById('profile-specialty').textContent = currentDoctor.specialty || 'Não definida';
+    document.getElementById('profile-consultations').textContent = currentDoctor.consultations_count || 0;
+    document.getElementById('profile-income').textContent = (currentDoctor.total_income || 0) + '€';
+    
+    loadEarningsBreakdown();
+}
+
+async function handleChangePassword() {
+    const currentPassword = document.getElementById('current-password').value;
+    const newPassword = document.getElementById('new-password').value;
+    const confirmPassword = document.getElementById('confirm-password').value;
+    
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        alert('Por favor, preencha todos os campos.');
+        return;
+    }
+    
+    if (currentPassword !== currentDoctor.password) {
+        alert('Password atual incorreta.');
+        return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+        alert('As novas passwords não coincidem.');
+        return;
+    }
+    
+    try {
+        const { data, error } = await supabase
+            .from('doctors')
+            .update({ password: newPassword })
+            .eq('order_number', currentDoctor.order_number)
+            .select()
+            .single();
+        
+        if (error) throw error;
+        
+        currentDoctor = data;
+        localStorage.setItem('drgo_current_doctor', JSON.stringify(data));
+        
+        document.getElementById('change-password-modal').classList.remove('active');
+        document.getElementById('change-password-form').reset();
+        alert('Password alterada com sucesso!');
+        
+    } catch (error) {
+        alert('Erro ao alterar password: ' + error.message);
+    }
+}
+
+async function toggleAvailability() {
+    isAvailable = document.getElementById('availability-checkbox').checked;
+    
+    try {
+        const { error } = await supabase
+            .from('doctors')
+            .update({ is_available: isAvailable })
+            .eq('order_number', currentDoctor.order_number);
+        
+        if (error) throw error;
+        
+        currentDoctor.is_available = isAvailable;
+        localStorage.setItem('drgo_current_doctor', JSON.stringify(currentDoctor));
+        
+        updateAvailabilityUI();
+        
+        if (isAvailable) {
+            console.log('Médico disponível - carregando consultas em espera');
             await loadWaitingConsultations();
-            await loadConsultationHistory();
+        } else {
+            console.log('Médico indisponível - limpando lista de espera');
+            document.getElementById('waiting-consultations').innerHTML = 
+                '<p>Nenhuma consulta em espera. Quando estiver disponível, novas consultas aparecerão aqui.</p>';
         }
+        
+    } catch (error) {
+        console.error('Erro ao atualizar disponibilidade:', error);
+        alert('Erro ao atualizar disponibilidade: ' + error.message);
+        document.getElementById('availability-checkbox').checked = !isAvailable;
+        isAvailable = !isAvailable;
+    }
+}
 
-        async function loadConsultationHistory(searchTerm = '') {
-            if (!currentDoctor) return;
-            
-            try {
-                const { data: consultations, error } = await supabase
-                    .from('consultations')
-                    .select('*')
-                    .eq('doctor_id', currentDoctor.doctor_id)
-                    .order('created_at', { ascending: false });
+function updateAvailabilityUI() {
+    document.getElementById('availability-checkbox').checked = isAvailable;
+}
+
+function setupRealtimeSubscription() {
+    if (realtimeSubscription) {
+        supabase.removeChannel(realtimeSubscription);
+    }
+
+    realtimeSubscription = supabase
+        .channel('consultations-all-changes')
+        .on(
+            'postgres_changes',
+            {
+                event: 'INSERT',
+                schema: 'public', 
+                table: 'consultations'
+            },
+            (payload) => {
+                console.log('Nova consulta inserida:', payload);
+                if (isAvailable && payload.new.status === 'searching') {
+                    console.log('Carregando consultas em espera - Nova inserção');
+                    loadWaitingConsultations();
+                }
+            }
+        )
+        .on(
+            'postgres_changes',
+            {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'consultations'
+            },
+            (payload) => {
+                console.log('Consulta atualizada:', payload.new.status);
                 
-                if (error) throw error;
-                
-                const container = document.getElementById('consultation-history');
-                container.innerHTML = '';
-                
-                const filteredConsultations = consultations ? consultations.filter(consultation => 
-                    consultation.patient_name.toLowerCase().includes((searchTerm || '').toLowerCase())
-                ) : [];
-                
-                if (filteredConsultations.length === 0) {
-                    container.innerHTML = '<p>Nenhuma consulta encontrada.</p>';
-                    return;
+                if (payload.old.status === 'searching' && payload.new.status !== 'searching') {
+                    console.log('Consulta removida da lista de espera');
+                    loadWaitingConsultations();
                 }
                 
-                filteredConsultations.forEach(consultation => {
-                    const card = createConsultationCard(consultation);
-                    container.appendChild(card);
-                });
+                if (payload.old.status !== 'searching' && payload.new.status === 'searching') {
+                    console.log('Consulta voltou para espera');
+                    loadWaitingConsultations();
+                }
                 
-            } catch (error) {
-                console.error('Erro ao carregar histórico:', error);
-                container.innerHTML = '<p>Erro ao carregar histórico de consultas.</p>';
+                loadConsultationHistory();
             }
-        }
+        )
+        .subscribe((status) => {
+            console.log('Status da subscrição:', status);
+            if (status === 'SUBSCRIBED') {
+                console.log('Ouvindo mudanças em consultas em tempo real');
+                if (isAvailable) {
+                    loadWaitingConsultations();
+                }
+            }
+        });
+}
 
-        function createConsultationBar(consultation) {
-            const details = consultation.details || {};
-            const bar = document.createElement('div');
-            bar.className = 'consultation-bar';
-            
-            bar.innerHTML = `
-                <div class="consultation-bar-info">
-                    <div class="patient-name">${consultation.patient_name}</div>
-                    <div class="consultation-details">
-                        <div class="detail-item">
-                            <i class="fas fa-user"></i>
-                            <span>${details.age || 'N/A'} anos</span>
-                        </div>
-                        <div class="detail-item">
-                            <i class="fas fa-stethoscope"></i>
-                            <span>${consultation.disease_classification}</span>
-                        </div>
-                        <div class="detail-item">
-                            <i class="fas fa-user-md"></i>
-                            <span>Farmacêutico: ${consultation.pharmacist_id || 'N/A'}</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="consultation-actions">
-                    <button class="btn btn-success btn-small accept-consultation-btn" data-id="${consultation.id}">
-                        <i class="fas fa-check"></i> Aceitar
-                    </button>
-                </div>
-            `;
-            
-            const acceptBtn = bar.querySelector('.accept-consultation-btn');
-            acceptBtn.addEventListener('click', function() {
-                const consultationId = this.getAttribute('data-id');
-                acceptConsultation(consultationId);
+async function loadWaitingConsultations() {
+    if (!currentDoctor || !isAvailable) {
+        console.log('Médico não disponível, não carregando consultas');
+        return;
+    }
+    
+    try {
+        console.log('Buscando consultas em espera...');
+        const { data: consultations, error } = await supabase
+            .from('consultations')
+            .select('*')
+            .eq('status', 'searching')
+            .order('created_at', { ascending: true });
+        
+        if (error) {
+            console.error('Erro ao buscar consultas:', error);
+            throw error;
+        }
+        
+        const container = document.getElementById('waiting-consultations');
+        container.innerHTML = '';
+        
+        console.log('Consultas encontradas:', consultations?.length || 0);
+        
+        if (consultations && consultations.length > 0) {
+            consultations.forEach(consultation => {
+                const bar = createConsultationBar(consultation);
+                container.appendChild(bar);
             });
-            
-            return bar;
+        } else {
+            container.innerHTML = '<p>Nenhuma consulta em espera. Quando estiver disponível, novas consultas aparecerão aqui.</p>';
         }
+        
+    } catch (error) {
+        console.error('Erro ao carregar consultas em espera:', error);
+        const container = document.getElementById('waiting-consultations');
+        container.innerHTML = '<p class="alert alert-error">Erro ao carregar consultas em espera.</p>';
+    }
+}
 
-        function createConsultationCard(consultation) {
-            const card = document.createElement('div');
-            card.className = 'consultation-card';
-            const details = consultation.details || {};
-            
-            let statusText, statusClass;
-            
-            switch(consultation.status) {
-                case 'completed':
-                    statusText = 'Concluída';
-                    statusClass = 'status-completed';
-                    break;
-                case 'in-call':
-                    statusText = 'Em chamada';
-                    statusClass = 'status-in-call';
-                    break;
-                case 'rejected':
-                    statusText = 'Rejeitada';
-                    statusClass = 'status-waiting';
-                    break;
-                default:
-                    statusText = consultation.status || 'Desconhecido';
-                    statusClass = 'status-waiting';
-            }
-            
-            card.innerHTML = `
-                <div class="patient-name">${consultation.patient_name}</div>
-                <div class="consultation-date">${formatDate(consultation.date)}</div>
-                <div class="consultation-status ${statusClass}">${statusText}</div>
-                <div><strong>Motivo:</strong> ${consultation.reason}</div>
-                <div><strong>Classificação:</strong> ${consultation.disease_classification}</div>
-                ${details.age ? `<div><strong>Idade:</strong> ${details.age} anos</div>` : ''}
-                ${details.temperature ? `<div><strong>Temperatura:</strong> ${details.temperature} °C</div>` : ''}
-                
-                <div class="consultation-actions">
-                    <button class="btn btn-secondary btn-small view-record-btn" data-id="${consultation.id}">
-                        <i class="fas fa-file-medical"></i> Registo
-                    </button>
-                </div>
-            `;
-            
-            const viewBtn = card.querySelector('.view-record-btn');
-            viewBtn.addEventListener('click', function() {
-                const consultationId = this.getAttribute('data-id');
-                viewConsultationRecord(consultation);
-            });
-            
-            return card;
+async function updateConsultationStatus(consultationId, status) {
+    try {
+        const { error } = await supabase
+            .from('consultations')
+            .update({ status: status })
+            .eq('id', consultationId);
+        
+        if (error) throw error;
+    } catch (error) {
+        console.error('Erro ao atualizar status da consulta:', error);
+    }
+}
+
+async function loadConsultationsPage() {
+    if (!currentDoctor) return;
+    
+    await loadWaitingConsultations();
+    await loadConsultationHistory();
+}
+
+async function loadConsultationHistory(searchTerm = '') {
+    if (!currentDoctor) return;
+    
+    try {
+        const { data: consultations, error } = await supabase
+            .from('consultations')
+            .select('*')
+            .eq('doctor_id', currentDoctor.doctor_id)
+            .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        const container = document.getElementById('consultation-history');
+        container.innerHTML = '';
+        
+        const filteredConsultations = consultations ? consultations.filter(consultation => 
+            consultation.patient_name.toLowerCase().includes((searchTerm || '').toLowerCase())
+        ) : [];
+        
+        if (filteredConsultations.length === 0) {
+            container.innerHTML = '<p>Nenhuma consulta encontrada.</p>';
+            return;
         }
+        
+        filteredConsultations.forEach(consultation => {
+            const card = createConsultationCard(consultation);
+            container.appendChild(card);
+        });
+        
+    } catch (error) {
+        console.error('Erro ao carregar histórico:', error);
+        container.innerHTML = '<p>Erro ao carregar histórico de consultas.</p>';
+    }
+}
 
-        function viewConsultationRecord(consultation) {
-            if (!consultation || !consultation.id) {
-                console.error('Consulta inválida:', consultation);
-                alert('Erro: Dados da consulta inválidos.');
-                return;
-            }
-            
-            const content = document.getElementById('consultation-record-content');
-            const details = consultation.details || {};
-            
-            callManager.consultationId = consultation.id;
-            callManager.notesSaved = false;
-            
-            let detailsHTML = `
-                <div class="detail-row">
-                    <div class="detail-label">Paciente:</div>
-                    <div class="detail-value">${consultation.patient_name}</div>
+function createConsultationBar(consultation) {
+    const details = consultation.details || {};
+    const bar = document.createElement('div');
+    bar.className = 'consultation-bar';
+    
+    bar.innerHTML = `
+        <div class="consultation-bar-info">
+            <div class="patient-name">${consultation.patient_name}</div>
+            <div class="consultation-details">
+                <div class="detail-item">
+                    <i class="fas fa-user"></i>
+                    <span>${details.age || 'N/A'} anos</span>
                 </div>
-                <div class="detail-row">
-                    <div class="detail-label">Data:</div>
-                    <div class="detail-value">${formatDate(consultation.date)}</div>
+                <div class="detail-item">
+                    <i class="fas fa-stethoscope"></i>
+                    <span>${consultation.disease_classification}</span>
                 </div>
-                <div class="detail-row">
-                    <div class="detail-label">Telemóvel:</div>
-                    <div class="detail-value">${details.phone || 'N/A'}</div>
+                <div class="detail-item">
+                    <i class="fas fa-user-md"></i>
+                    <span>Farmacêutico: ${consultation.pharmacist_id || 'N/A'}</span>
                 </div>
-                <div class="detail-row">
-                    <div class="detail-label">Sexo:</div>
-                    <div class="detail-value">${details.gender || 'N/A'}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Idade:</div>
-                    <div class="detail-value">${details.age ? details.age + ' anos' : 'N/A'}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Peso:</div>
-                    <div class="detail-value">${details.weight ? details.weight + ' kg' : 'N/A'}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Classificação:</div>
-                    <div class="detail-value">${consultation.disease_classification}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Motivo:</div>
-                    <div class="detail-value">${consultation.reason}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Temperatura:</div>
-                    <div class="detail-value">${details.temperature ? details.temperature + ' °C' : 'N/A'}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Tensão Arterial:</div>
-                    <div class="detail-value">${details.bloodPressure || 'N/A'}</div>
-                </div>
-            `;
-            
-            if (details.glucose) detailsHTML += `<div class="detail-row"><div class="detail-label">Glicemia:</div><div class="detail-value">${details.glucose} mg/dL</div></div>`;
-            if (details.cholesterol) detailsHTML += `<div class="detail-row"><div class="detail-label">Colesterol:</div><div class="detail-value">${details.cholesterol} mg/dL</div></div>`;
-            if (details.allergies) detailsHTML += `<div class="detail-row"><div class="detail-label">Alergias:</div><div class="detail-value">${details.allergies}</div></div>`;
-            if (details.otherInfo) detailsHTML += `<div class="detail-row"><div class="detail-label">Outras Indicações:</div><div class="detail-value">${details.otherInfo}</div></div>`;
-            
-            if (consultation.photos && consultation.photos.length > 0) {
-                detailsHTML += `
-                    <div class="detail-row">
-                        <div class="detail-label">Fotos:</div>
-                        <div class="detail-value">
-                            <div class="photos-gallery">
-                                ${consultation.photos.map((photo, index) => `
-                                    <div class="photo-item" style="cursor: pointer;">
-                                        <img src="${photo}" alt="Foto ${index + 1} da consulta" data-src="${photo}" class="zoomable-image">
-                                    </div>
-                                `).join('')}
+            </div>
+        </div>
+        <div class="consultation-actions">
+            <button class="btn btn-success btn-small accept-consultation-btn" data-id="${consultation.id}">
+                <i class="fas fa-check"></i> Aceitar
+            </button>
+        </div>
+    `;
+    
+    const acceptBtn = bar.querySelector('.accept-consultation-btn');
+    acceptBtn.addEventListener('click', function() {
+        const consultationId = this.getAttribute('data-id');
+        acceptConsultation(consultationId);
+    });
+    
+    return bar;
+}
+
+function createConsultationCard(consultation) {
+    const card = document.createElement('div');
+    card.className = 'consultation-card';
+    const details = consultation.details || {};
+    
+    let statusText, statusClass;
+    
+    switch(consultation.status) {
+        case 'completed':
+            statusText = 'Concluída';
+            statusClass = 'status-completed';
+            break;
+        case 'in-call':
+            statusText = 'Em chamada';
+            statusClass = 'status-in-call';
+            break;
+        case 'rejected':
+            statusText = 'Rejeitada';
+            statusClass = 'status-waiting';
+            break;
+        default:
+            statusText = consultation.status || 'Desconhecido';
+            statusClass = 'status-waiting';
+    }
+    
+    card.innerHTML = `
+        <div class="patient-name">${consultation.patient_name}</div>
+        <div class="consultation-date">${formatDate(consultation.date)}</div>
+        <div class="consultation-status ${statusClass}">${statusText}</div>
+        <div><strong>Motivo:</strong> ${consultation.reason}</div>
+        <div><strong>Classificação:</strong> ${consultation.disease_classification}</div>
+        ${details.age ? `<div><strong>Idade:</strong> ${details.age} anos</div>` : ''}
+        ${details.temperature ? `<div><strong>Temperatura:</strong> ${details.temperature} °C</div>` : ''}
+        
+        <div class="consultation-actions">
+            <button class="btn btn-secondary btn-small view-record-btn" data-id="${consultation.id}">
+                <i class="fas fa-file-medical"></i> Registo
+            </button>
+        </div>
+    `;
+    
+    const viewBtn = card.querySelector('.view-record-btn');
+    viewBtn.addEventListener('click', function() {
+        const consultationId = this.getAttribute('data-id');
+        viewConsultationRecord(consultation);
+    });
+    
+    return card;
+}
+
+function viewConsultationRecord(consultation) {
+    if (!consultation || !consultation.id) {
+        console.error('Consulta inválida:', consultation);
+        alert('Erro: Dados da consulta inválidos.');
+        return;
+    }
+    
+    const content = document.getElementById('consultation-record-content');
+    const details = consultation.details || {};
+    
+    callManager.consultationId = consultation.id;
+    
+    // Resetar estado das notas ao abrir registo
+    callManager.noteState = {
+        hasContent: false,
+        isSaved: false
+    };
+    callUIManager.updateCompleteButton(callManager.noteState);
+    
+    let detailsHTML = `
+        <div class="detail-row">
+            <div class="detail-label">Paciente:</div>
+            <div class="detail-value">${consultation.patient_name}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Data:</div>
+            <div class="detail-value">${formatDate(consultation.date)}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Telemóvel:</div>
+            <div class="detail-value">${details.phone || 'N/A'}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Sexo:</div>
+            <div class="detail-value">${details.gender || 'N/A'}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Idade:</div>
+            <div class="detail-value">${details.age ? details.age + ' anos' : 'N/A'}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Peso:</div>
+            <div class="detail-value">${details.weight ? details.weight + ' kg' : 'N/A'}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Classificação:</div>
+            <div class="detail-value">${consultation.disease_classification}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Motivo:</div>
+            <div class="detail-value">${consultation.reason}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Temperatura:</div>
+            <div class="detail-value">${details.temperature ? details.temperature + ' °C' : 'N/A'}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Tensão Arterial:</div>
+            <div class="detail-value">${details.bloodPressure || 'N/A'}</div>
+        </div>
+    `;
+    
+    if (details.glucose) detailsHTML += `<div class="detail-row"><div class="detail-label">Glicemia:</div><div class="detail-value">${details.glucose} mg/dL</div></div>`;
+    if (details.cholesterol) detailsHTML += `<div class="detail-row"><div class="detail-label">Colesterol:</div><div class="detail-value">${details.cholesterol} mg/dL</div></div>`;
+    if (details.allergies) detailsHTML += `<div class="detail-row"><div class="detail-label">Alergias:</div><div class="detail-value">${details.allergies}</div></div>`;
+    if (details.otherInfo) detailsHTML += `<div class="detail-row"><div class="detail-label">Outras Indicações:</div><div class="detail-value">${details.otherInfo}</div></div>`;
+    
+    if (consultation.photos && consultation.photos.length > 0) {
+        detailsHTML += `
+            <div class="detail-row">
+                <div class="detail-label">Fotos:</div>
+                <div class="detail-value">
+                    <div class="photos-gallery">
+                        ${consultation.photos.map((photo, index) => `
+                            <div class="photo-item" style="cursor: pointer;">
+                                <img src="${photo}" alt="Foto ${index + 1} da consulta" data-src="${photo}" class="zoomable-image">
                             </div>
-                        </div>
+                        `).join('')}
                     </div>
-                `;
-            }
-            
-            content.innerHTML = detailsHTML;
-            
-            if (consultation.observation_doctor) {
-                document.getElementById('observation-doctor').value = consultation.observation_doctor;
-            } else {
-                document.getElementById('observation-doctor').value = '';
-            }
-            
-            if (consultation.intervention_doctor) {
-                document.getElementById('intervention-doctor').value = consultation.intervention_doctor;
-            } else {
-                document.getElementById('intervention-doctor').value = '';
-            }
+                </div>
+            </div>
+        `;
+    }
+    
+    content.innerHTML = detailsHTML;
+    
+    // Preencher campos se já existirem dados
+    if (consultation.observation_doctor) {
+        document.getElementById('observation-doctor').value = consultation.observation_doctor;
+        callManager.noteState.hasContent = true;
+    } else {
+        document.getElementById('observation-doctor').value = '';
+    }
+    
+    if (consultation.intervention_doctor) {
+        document.getElementById('intervention-doctor').value = consultation.intervention_doctor;
+        callManager.noteState.hasContent = true;
+        callManager.noteState.isSaved = true;
+    } else {
+        document.getElementById('intervention-doctor').value = '';
+    }
 
-            if (consultation.status === 'completed' || consultation.status === 'rejected') {
-                document.getElementById('observation-doctor').disabled = true;
-                document.getElementById('intervention-doctor').disabled = true;
-                document.getElementById('save-doctor-notes').disabled = true;
-                document.getElementById('save-doctor-notes').innerHTML = '<i class="fas fa-lock"></i> Consulta Concluída';
-            } else {
-                document.getElementById('observation-doctor').disabled = false;
-                document.getElementById('intervention-doctor').disabled = false;
-                document.getElementById('save-doctor-notes').disabled = false;
-                document.getElementById('save-doctor-notes').innerHTML = '<i class="fas fa-save"></i> Guardar';
-                
-                if (consultation.observation_doctor && consultation.intervention_doctor) {
-                    callManager.notesSaved = true;
-                    callUIManager.updateCompleteButton(callManager.canCompleteConsultation());
-                } else {
-                    callManager.notesSaved = false;
-                    callUIManager.updateCompleteButton(false);
-                }
-            }
-            
-            document.getElementById('consultation-record-modal').classList.add('active');
-            setupImageZoom();
-        }
+    // Verificar conteúdo inicial
+    callManager.checkNotesContent();
 
-        function setupImageZoom() {
-            document.querySelectorAll('.zoomable-image').forEach(img => {
-                img.style.cursor = 'zoom-in';
-                img.addEventListener('click', function() {
-                    document.getElementById('modal-image').src = this.getAttribute('data-src') || this.src;
-                    document.getElementById('image-modal').classList.add('active');
-                });
-            });
-        }
+    if (consultation.status === 'completed' || consultation.status === 'rejected') {
+        document.getElementById('observation-doctor').disabled = true;
+        document.getElementById('intervention-doctor').disabled = true;
+        document.getElementById('save-doctor-notes').disabled = true;
+        document.getElementById('save-doctor-notes').innerHTML = '<i class="fas fa-lock"></i> Consulta Concluída';
+    } else {
+        document.getElementById('observation-doctor').disabled = false;
+        document.getElementById('intervention-doctor').disabled = false;
+        document.getElementById('save-doctor-notes').disabled = false;
+        document.getElementById('save-doctor-notes').innerHTML = '<i class="fas fa-save"></i> Guardar';
+    }
+    
+    document.getElementById('consultation-record-modal').classList.add('active');
+    setupImageZoom();
+}
 
-        async function loadEarningsBreakdown() {
-            if (!currentDoctor) return;
-            
-            try {
-                const { data: consultations, error } = await supabase
-                    .from('consultations')
-                    .select('*')
-                    .eq('doctor_id', currentDoctor.doctor_id)
-                    .eq('status', 'completed');
-                
-                if (error) throw error;
-                
-                const totalConsultations = consultations ? consultations.length : 0;
-                const totalEarnings = totalConsultations * 15;
-                
-                const container = document.getElementById('earnings-breakdown');
-                
-                container.innerHTML = `
-                    <div class="consultation-card">
-                        <div class="patient-name">Resumo Total</div>
-                        <div><strong>Total de Consultas Concluídas:</strong> ${totalConsultations}</div>
-                        <div><strong>Valor por Consulta:</strong> 15€</div>
-                        <div><strong>Total Ganho:</strong> <span style="color: var(--success-color); font-weight: bold;">${totalEarnings}€</span></div>
-                    </div>
-                `;
-                
-            } catch (error) {
-                console.error('Erro ao carregar ganhos:', error);
-            }
-        }
+function setupImageZoom() {
+    document.querySelectorAll('.zoomable-image').forEach(img => {
+        img.style.cursor = 'zoom-in';
+        img.addEventListener('click', function() {
+            document.getElementById('modal-image').src = this.getAttribute('data-src') || this.src;
+            document.getElementById('image-modal').classList.add('active');
+        });
+    });
+}
 
-        // Funções utilitárias
-        function formatDate(dateString) {
-            return new Date(dateString).toLocaleDateString('pt-PT');
-        }
+async function loadEarningsBreakdown() {
+    if (!currentDoctor) return;
+    
+    try {
+        const { data: consultations, error } = await supabase
+            .from('consultations')
+            .select('*')
+            .eq('doctor_id', currentDoctor.doctor_id)
+            .eq('status', 'completed');
+        
+        if (error) throw error;
+        
+        const totalConsultations = consultations ? consultations.length : 0;
+        const totalEarnings = totalConsultations * 15;
+        
+        const container = document.getElementById('earnings-breakdown');
+        
+        container.innerHTML = `
+            <div class="consultation-card">
+                <div class="patient-name">Resumo Total</div>
+                <div><strong>Total de Consultas Concluídas:</strong> ${totalConsultations}</div>
+                <div><strong>Valor por Consulta:</strong> 15€</div>
+                <div><strong>Total Ganho:</strong> <span style="color: var(--success-color); font-weight: bold;">${totalEarnings}€</span></div>
+            </div>
+        `;
+        
+    } catch (error) {
+        console.error('Erro ao carregar ganhos:', error);
+    }
+}
+
+// Funções utilitárias
+function formatDate(dateString) {
+    return new Date(dateString).toLocaleDateString('pt-PT');
+}
     </script>
 </body>
 </html>
